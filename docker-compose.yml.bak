@@ -1,0 +1,129 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cryptoplatform
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./packages/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cryptoplatform || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bitcoind:
+    image: ruimarinho/bitcoin-core:24-alpine
+    command:
+      - -testnet=1
+      - -server=1
+      - -txindex=1
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+      - -rpcuser=bitcoin
+      - -rpcpassword=bitcoin
+      - -listen=1
+      - -bind=0.0.0.0
+      - -fallbackfee=0.0002
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+      - -zmqpubrawtx=tcp://0.0.0.0:28333
+    ports:
+      - "18332:18332"
+      - "18333:18333"
+    restart: unless-stopped
+    volumes:
+      - bitcoind_data:/home/bitcoin/.bitcoin
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-testnet", "-rpcuser=bitcoin", "-rpcpassword=bitcoin", "getblockchaininfo"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+
+  nbxplorer:
+    image: nicolasdorier/nbxplorer:2.5.0
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      Logging__LogLevel__Default: "Debug"
+      NBXPLORER_NETWORK: "testnet"
+      NBXPLORER_CHAINS: "btc"
+      NBXPLORER_BIND: "0.0.0.0:24445"
+      NBXPLORER_BTCRPCURL: "http://bitcoind:18332/"
+      NBXPLORER_BTCRPCUSER: "bitcoin"
+      NBXPLORER_BTCRPCPASSWORD: "bitcoin"
+      NBXPLORER_POSTGRES: "Host=db;Port=5432;Database=cryptoplatform;User ID=postgres;Password=postgres"
+    depends_on:
+      - bitcoind
+      - db
+    ports:
+      - "24445:24445"
+    restart: unless-stopped
+    volumes:
+      - nbxplorer_data:/datadir
+      - ./nbxplorer-config/TestNet/settings.config:/datadir/TestNet/settings.config:ro
+
+  btcpay:
+    image: btcpayserver/btcpayserver:2.2.1
+    environment:
+      BTCPAY_NETWORK: "testnet"
+      BTCPAY_POSTGRES: "User ID=postgres;Password=postgres;Host=db;Port=5432;Database=cryptoplatform"
+      BTCPAY_BIND: "0.0.0.0"
+      BTCPAY_PORT: "49392"
+      BTCPAY_BTCEXPLORERURL: "http://nbxplorer:24445/"
+    ports:
+      - "49392:49392"
+    depends_on:
+      - db
+      - nbxplorer
+    restart: unless-stopped
+    volumes:
+      - btcpay_data:/data
+      - ./btcpay-plugins:/root/.btcpayserver/Plugins:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    env_file: ./.env
+    environment:
+      BTCPAY_HOST: "http://btcpay:49392"
+      BTCPAY_API_KEY: "${BTCPAY_API_KEY}"
+      BTCPAY_STORE_ID: "${BTCPAY_STORE_ID}"
+      BTCPAY_WEBHOOK_SECRET: "${BTCPAY_WEBHOOK_SECRET}"
+    depends_on:
+      - db
+      - btcpay
+    ports:
+      - "3001:3001"
+
+  web:
+    build: ./apps/web
+    env_file: ./.env
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
+  nbxplorer_data:
+  bitcoind_data:
+  btcpay_data:
+  redis_data:

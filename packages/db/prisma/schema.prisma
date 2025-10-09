@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DepositStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  deposits  Deposit[]
+  ledger    LedgerEntry[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Deposit {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  invoiceId     String        @unique
+  amount        Float
+  currency      String
+  status        DepositStatus @default(PENDING)
+  btcpayStatus  String?
+  confirmedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model LedgerEntry {
+  id         String   @id @default(cuid())
+  userId     String?
+  account    String
+  deltaMinor BigInt
+  currency   String?
+  refType    String
+  refId      String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+model WebhookEvent {
+  id         String   @id @default(cuid())
+  eventId    String   @unique
+  eventType  String
+  payload    Json
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}

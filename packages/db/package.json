@@ -1,0 +1,14 @@
+{
+  "name": "@repo/db",
+  "version": "0.1.0",
+  "private": true,
+  "prisma": {
+    "schema": "./prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "5.18.0"
+  },
+  "devDependencies": {
+    "prisma": "5.18.0"
+  }
+}
