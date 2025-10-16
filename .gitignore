@@ -1,0 +1,41 @@
+# Node
+node_modules/
+.pnpm-debug.log
+npm-debug.log
+pnpm-lock.yaml
+
+# dotenv
+.env
+packages/db/prisma/.env
+
+# Docker
+docker-compose.override.yml
+**/docker-compose.override.yml
+*.log
+
+# VSCode
+.vscode/
+
+# build
+dist/
+apps/api/dist/
+
+# prisma
+/prisma/dev.db
+packages/db/prisma/migrations/
+
+# local logs
+logs/
+
+# OS
+.DS_Store
+
+# btcpay plugins and binaries
+btcpay-plugins/
+
+# local npm cache
+.cache/
+
+# misc
+coverage/
+
