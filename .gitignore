@@ -5,8 +5,8 @@ npm-debug.log
 pnpm-lock.yaml
 
 # dotenv
-.env
-packages/db/prisma/.env
+#.env
+#packages/db/prisma/.env
 
 # Docker
 docker-compose.override.yml
