@@ -45,6 +45,11 @@ export class BtcpayService {
       const body: any = { currency };
       if (amount != null) body.amount = String(amount);
       body.metadata = metadata;
+      // Force only USDT-TRON as payment method to avoid BTC rates and methods
+      body.checkout = {
+        paymentMethods: ['USDT-TRON'],
+        defaultPaymentMethod: 'USDT-TRON'
+      };
       const res = await this.client.post(`/stores/${sid}/invoices`, body);
       return res.data;
     } catch (e: any) {

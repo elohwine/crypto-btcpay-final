@@ -20,5 +20,8 @@ COPY --from=base /app/apps/api/dist ./dist
 COPY apps/api/package.json ./package.json
 # Copy node_modules from builder to retain @prisma/client generated files
 COPY --from=base /app/node_modules ./node_modules
+# Copy Prisma schema/migrations so we can run migrate at runtime
+COPY packages/db/prisma ./packages/db/prisma
 EXPOSE 3001
-CMD ["node","dist/main.js"]
+# Run Prisma migrations before starting the app (safe if already up-to-date)
+CMD ["sh","-lc","npx prisma migrate deploy --schema ./packages/db/prisma/schema.prisma || true; node dist/main.js"]

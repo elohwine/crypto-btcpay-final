@@ -18,6 +18,7 @@ services:
       timeout: 5s
       retries: 10
 
+  # Redis kept for reference but not required for USDt-only setup (profiles: [optional])
   redis:
     image: redis:7-alpine
     ports:
@@ -29,7 +30,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    profiles:
+      - optional
 
+  # BTC infrastructure kept for reference but not started by default (profiles: [btc])
   bitcoind:
     image: ruimarinho/bitcoin-core:24-alpine
     command:
@@ -56,6 +60,8 @@ services:
       interval: 20s
       timeout: 10s
       retries: 10
+    profiles:
+      - btc
 
   nbxplorer:
     image: nicolasdorier/nbxplorer:2.5.0
@@ -69,6 +75,7 @@ services:
       NBXPLORER_BTCRPCUSER: "bitcoin"
       NBXPLORER_BTCRPCPASSWORD: "bitcoin"
       NBXPLORER_POSTGRES: "Host=db;Port=5432;Database=cryptoplatform;User ID=postgres;Password=postgres"
+      NBXPLORER_NOAUTH: "1"
     depends_on:
       - bitcoind
       - db
@@ -78,6 +85,8 @@ services:
     volumes:
       - nbxplorer_data:/datadir
       - ./nbxplorer-config/TestNet/settings.config:/datadir/TestNet/settings.config:ro
+    profiles:
+      - btc
 
   btcpay:
     image: btcpayserver/btcpayserver:2.2.1
@@ -87,15 +96,18 @@ services:
       BTCPAY_BIND: "0.0.0.0"
       BTCPAY_PORT: "49392"
       BTCPAY_BTCEXPLORERURL: "http://nbxplorer:24445/"
+      # Disable BTC chain to avoid errors when NBXplorer is not running
+      BTCPAY_CHAINS: ""
     ports:
       - "49392:49392"
     depends_on:
       - db
-      - nbxplorer
+      # Removed nbxplorer dependency - BTCPay can run with USDt plugin without it
     restart: unless-stopped
     volumes:
       - btcpay_data:/data
-      - ./btcpay-plugins:/root/.btcpayserver/Plugins:ro
+      # Plugin mount with write access so BTCPay can manage plugins
+      - ./btcpay-plugins:/root/.btcpayserver/Plugins
 
   api:
     build:
