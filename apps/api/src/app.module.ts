@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { BtcpayModule } from './modules/btcpay/btcpay.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { DepositsModule } from './modules/deposits/deposits.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { AppConfigModule } from './modules/config/config.module';
 
 @Module({
   imports: [
@@ -15,8 +17,10 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
         '../../.env',    // repo root .env (docker compose / alternative dev)
       ],
     }),
-    PrismaModule,
+  PrismaModule,
+  AppConfigModule,
     BtcpayModule,
+    AuthModule,
     LedgerModule,
     DepositsModule,
     WebhooksModule,
