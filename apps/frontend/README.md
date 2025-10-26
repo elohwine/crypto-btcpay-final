@@ -92,3 +92,13 @@ If you would like to contribute, please create a new branch and submit a pull re
 ## License
 
 MIT
+
+## Notes: new API endpoints used by the Deposit widget
+
+This fork adds a small runtime configuration endpoint and expects server-backed deposit history. The `BankProcess` widget uses the following API endpoints (available on the API at `http://localhost:3001`):
+
+- `GET /api/config/token` — returns `{ tokenContract: string | null }`. The frontend uses this value for TRC20 transfers instead of a hard-coded contract address.
+- `GET /api/deposits` — returns the current user's deposit history (used as authoritative history). The widget will fall back to a local cache if the API is unavailable.
+- `GET /api/deposits/public` — recent public deposits (existing endpoint; still used for the public list).
+
+After pulling these changes, run `pnpm install` (or `npm install`) in the frontend and API workspaces and set the environment variable `TRON_TOKEN_CONTRACT` for the API to configure the deployed token contract.
