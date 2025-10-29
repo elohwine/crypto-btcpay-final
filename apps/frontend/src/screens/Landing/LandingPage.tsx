@@ -20,6 +20,7 @@ import {
   useMantineTheme,
   Image,
 } from '@mantine/core';
+import { Link } from 'react-router-dom';
 import { TrendingUp, Shield, Zap, Wallet, LineChart, BarChart3, Users } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
@@ -41,11 +42,11 @@ const LandingPage: React.FC = () => {
               Invest in USDT on Tron Network with real-time tracking and secure transactions
             </Text>
             <Group spacing="md">
-              <Button size="lg" radius="md" style={{ backgroundColor: primary }}>
+              <Button size="lg" radius="md" component={Link} to="/members/signup" color="primary">
                 Get Started
               </Button>
-              <Button size="lg" radius="md" variant="default">
-                Free Trial
+              <Button size="lg" radius="md" component={Link} to="/members/signin" variant="default">
+                Sign in
               </Button>
             </Group>
 
@@ -125,7 +126,7 @@ const LandingPage: React.FC = () => {
               <Title order={3} color="white">Get started with Magnum</Title>
               <Text color="white" size="sm">Create an account and start trading USDT on Tron Network today.</Text>
             </div>
-            <Button size="lg" radius="md" style={{ backgroundColor: primary }}>
+            <Button size="lg" radius="md" component={Link} to="/members/signup" color="dark">
               Sign up
             </Button>
           </Flex>

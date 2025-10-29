@@ -85,6 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('user');
       setUser(null);
       notify.info('Signed out successfully');
+      // Redirect to landing page after logout so the user sees public home
+      try { window.location.href = '/'; } catch (e) { /* ignore */ }
     } catch (error: any) {
       const msg = error?.response?.data?.message || error?.message || 'Sign out failed';
       notify.error(msg);
