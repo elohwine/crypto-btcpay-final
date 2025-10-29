@@ -113,8 +113,8 @@ services:
 
   api:
     build:
-      context: .
-      dockerfile: ./apps/api/Dockerfile
+      context: ./apps/api
+      dockerfile: Dockerfile
     env_file: ./.env
     environment:
       BTCPAY_HOST: "http://btcpay:49392"

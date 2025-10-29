@@ -3,10 +3,12 @@ import { loader } from '../ui/loading/loaderContext';
 import { notify } from '../ui/notifications/notify';
 import { progress } from '../ui/progress/ProgressOverlay';
 
+// Resolve base API URL from (build-time) NEXT_PUBLIC_API_URL, or runtime window._API,
+// falling back to localhost for local dev. Keep the `/api` prefix so calls like
+// `/deposits` map to Nest controller routes declared under `@Controller('api/deposits')`.
+const resolvedApiHost = (process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && (window as any)._API) || 'http://localhost:3001').replace(/\/$/, '');
 const api = axios.create({
-  // include the /api prefix so frontend calls like `/deposits` map to
-  // backend controller routes declared under `@Controller('api/deposits')`.
-  baseURL: 'http://localhost:3001/api',
+  baseURL: `${resolvedApiHost}/api`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
