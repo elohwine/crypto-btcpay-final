@@ -4,6 +4,10 @@ node_modules/
 npm-debug.log
 pnpm-lock.yaml
 
+# Explicitly ignore nested node_modules directories that were accidentally committed
+**/node_modules/
+trc20-deploy/node_modules/
+
 # dotenv
 #.env
 #packages/db/prisma/.env
