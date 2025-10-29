@@ -21,7 +21,7 @@ import {
   Image,
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Shield, Zap, Wallet, LineChart, BarChart3, Users } from 'lucide-react';
+import { IconTrendingUp, IconShield, IconZap, IconWallet, IconChartLine, IconChartBar, IconUsers } from '@tabler/icons-react';
 
 const LandingPage: React.FC = () => {
   const theme = useMantineTheme();
@@ -55,7 +55,7 @@ const LandingPage: React.FC = () => {
                 <Grid.Col span={12} md={6}>
                   <Group mb="md">
                     <Avatar size={60} radius={999} color={theme.primaryColor}>
-                      <Users size={28} />
+                      <IconUsers size={28} />
                     </Avatar>
                     <div>
                       <Text weight={600} size="md">MD Isaz Miah</Text>
@@ -94,22 +94,22 @@ const LandingPage: React.FC = () => {
 
           <SimpleGrid cols={3} spacing="xl" breakpoints={[{ maxWidth: 'md', cols: 1 }]}>
             <Stack align="center" spacing="md">
-              <ThemeIcon size={70} radius="xl" sx={{ backgroundColor: primary }}>
-                <Shield size={32} />
+                <ThemeIcon size={70} radius="xl" sx={{ backgroundColor: primary }}>
+                <IconShield size={32} />
               </ThemeIcon>
               <Text weight={600} size="lg">Secure Platform</Text>
               <Text size="sm" color="dimmed" align="center">Your USDT investments are protected with bank-level security and blockchain transparency.</Text>
             </Stack>
             <Stack align="center" spacing="md">
-              <ThemeIcon size={70} radius="xl" color="blue">
-                <TrendingUp size={32} />
+                <ThemeIcon size={70} radius="xl" color="blue">
+                <IconTrendingUp size={32} />
               </ThemeIcon>
               <Text weight={600} size="lg">Real-Time Analytics</Text>
               <Text size="sm" color="dimmed" align="center">Track your USDT portfolio with live market data and comprehensive analytics tools.</Text>
             </Stack>
             <Stack align="center" spacing="md">
-              <ThemeIcon size={70} radius="xl" color="cyan">
-                <Zap size={32} />
+                <ThemeIcon size={70} radius="xl" color="cyan">
+                <IconZap size={32} />
               </ThemeIcon>
               <Text weight={600} size="lg">Instant Transactions</Text>
               <Text size="sm" color="dimmed" align="center">Experience lightning-fast USDT transfers on Tron Network with minimal fees.</Text>
