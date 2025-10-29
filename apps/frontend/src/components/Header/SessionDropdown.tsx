@@ -16,10 +16,9 @@ const SessionDropdown: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  const { primary, contrast } = useAppTheme();
 
   if (!user) return null;
-
-  const { primary, contrast } = useAppTheme();
   const rootTextVar =
     typeof window !== 'undefined'
       ? getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#000'
