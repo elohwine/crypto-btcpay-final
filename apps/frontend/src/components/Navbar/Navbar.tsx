@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../lib/auth';
 
 // components
 import NavbarButton from './NavbarButton';
 
-const Navbar: React.FC = () => (
+const Navbar: React.FC = () => {
+  const { user } = useAuth();
+  return (
   <nav className='navbar-inner no-select'>
     <div className='logo'>
       <Link to='/market'>
@@ -14,6 +17,13 @@ const Navbar: React.FC = () => (
         />
       </Link>
     </div>
+    {/* Show sign in / sign up links for unauthenticated users so landing page has quick access */}
+    {!user && (
+      <div style={{ padding: '8px 12px', display: 'flex', gap: 8 }}>
+        <Link to='/members/signin' className='button button-outline'>Sign in</Link>
+        <Link to='/members/signup' className='button button-purple'>Sign up</Link>
+      </div>
+    )}
     <h3>Main menu</h3>
     <ul>
       <li>
@@ -57,6 +67,7 @@ const Navbar: React.FC = () => (
       </p>
     </div>
   </nav>
-);
+  );
+};
 
 export default Navbar;
