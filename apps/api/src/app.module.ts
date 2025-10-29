@@ -6,7 +6,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { DepositsModule } from './modules/deposits/deposits.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
-import { AppConfigModule } from './modules/config/config.module';
 
 @Module({
   imports: [
@@ -17,8 +16,7 @@ import { AppConfigModule } from './modules/config/config.module';
         '../../.env',    // repo root .env (docker compose / alternative dev)
       ],
     }),
-  PrismaModule,
-  AppConfigModule,
+    PrismaModule,
     BtcpayModule,
     AuthModule,
     LedgerModule,

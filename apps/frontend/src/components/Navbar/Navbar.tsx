@@ -9,7 +9,7 @@ const Navbar: React.FC = () => (
       <Link to='/market'>
         <img
           draggable='false'
-          alt='Crypto Exchange'
+          alt='Magnum'
           src={`${process.env.PUBLIC_URL}/images/logo.png`}
         />
       </Link>
@@ -45,7 +45,7 @@ const Navbar: React.FC = () => (
       </li>
     </ul>
     <div className='copyright'>
-      <strong>Crypto Exchange</strong>
+  <strong>Magnum</strong>
       <p>
         {new Date().getFullYear()} &copy; All rights reserved.
         <br />

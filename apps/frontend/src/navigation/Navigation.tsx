@@ -10,19 +10,22 @@ import CapitalScreen from '../screens/Capital/CapitalScreen';
 import NotFoundScreen from '../screens/NotFound/NotFoundScreen';
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import TransactionsScreen from '../screens/Transactions/TransactionsScreen';
+import { DemoNotifications } from '../components/DemoNotifications';
+import ProtectedRoute from '../components/Common/ProtectedRoute';
 
 const Navigation: React.FC = () => (
-  <Routes>
-    <Route path='/' element={<SigninScreen />} />
-    <Route path='/market' element={<MarketScreen />} />
-    <Route path='/members' element={<ProfileScreen />} />
-    <Route path='/capital' element={<CapitalScreen />} />
-    <Route path='/dashboard' element={<DashboardScreen />} />
-    <Route path='/members/signup' element={<SignupScreen />} />
-    <Route path='/transactions' element={<TransactionsScreen />} />
-    <Route path='/members/forgot-password' element={<ForgotScreen />} />
-    <Route path='*' element={<NotFoundScreen />} />
-  </Routes>
+    <Routes>
+      <Route path='/' element={<SigninScreen />} />
+      <Route path='/market' element={<MarketScreen />} />
+      <Route path='/members' element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
+      <Route path='/capital' element={<ProtectedRoute><CapitalScreen /></ProtectedRoute>} />
+      <Route path='/dashboard' element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
+      <Route path='/members/signup' element={<SignupScreen />} />
+      <Route path='/transactions' element={<ProtectedRoute><TransactionsScreen /></ProtectedRoute>} />
+      <Route path='/members/forgot-password' element={<ForgotScreen />} />
+      <Route path='/demo' element={<ProtectedRoute><DemoNotifications /></ProtectedRoute>} />
+      <Route path='*' element={<NotFoundScreen />} />
+    </Routes>
 );
 
 export default Navigation;

@@ -1,0 +1,4 @@
+// Disabled flat ESLint config to avoid incompatibility with react-scripts' ESLint invocation.
+// The original config was moved to `eslint.config.mjs.disabled` for reference.
+
+export default [];

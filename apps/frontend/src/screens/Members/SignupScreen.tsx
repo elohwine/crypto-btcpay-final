@@ -1,9 +1,10 @@
 import { useState } from 'react';
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // hooks
 import useFormEvents from '../../hooks/useFormEvents';
+import { useAuth } from '../../lib/auth';
 
 // components
 import Box from '../../components/Common/Box';
@@ -11,6 +12,11 @@ import MainLayout from '../../layouts/MainLayout';
 import FormInput from '../../components/Forms/FormInput';
 import FormButton from '../../components/Forms/FormButton';
 import FormCheckbox from '../../components/Forms/FormCheckbox';
+
+// mantine
+import { DateInput } from '@mantine/dates';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 // interfaces
 interface IFormProps {
@@ -23,11 +29,7 @@ interface IFormProps {
   citizenship: boolean;
   identityType: string;
   identityNumber: string;
-  day: string;
-  month: string;
-  year: string;
-  country: string;
-  operator: string;
+  dateOfBirth: string;
   agreeToPolicies1: boolean;
   agreeToPolicies2: boolean;
   agreeToPolicies3: boolean;
@@ -35,6 +37,8 @@ interface IFormProps {
 
 const SignupScreen: React.FC = () => {
   const { onlyNumbers, onlyEmail } = useFormEvents();
+  const navigate = useNavigate();
+  const { signup } = useAuth();
 
   const [formValues, setFormValues] = useState<IFormProps>({
     email: '',
@@ -46,15 +50,12 @@ const SignupScreen: React.FC = () => {
     citizenship: false,
     identityType: '',
     identityNumber: '',
-    day: '',
-    month: '',
-    year: '',
-    country: '',
-    operator: '',
+    dateOfBirth: '',
     agreeToPolicies1: false,
     agreeToPolicies2: false,
     agreeToPolicies3: false,
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   /**
    * Handles input changes in the sign-up form.
@@ -92,8 +93,23 @@ const SignupScreen: React.FC = () => {
    * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
    * @returns {void}
    */
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    setIsLoading(true);
+    try {
+      await signup(
+        formValues.email, 
+        formValues.password, 
+        formValues.name, 
+        formValues.dateOfBirth || undefined,
+        formValues.phone
+      );
+      navigate('/dashboard');
+    } catch (error) {
+      // Error handled in auth.tsx
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -106,7 +122,7 @@ const SignupScreen: React.FC = () => {
                 <div className='form-logo center'>
                   <img
                     draggable='false'
-                    alt='Crypto Exchange'
+                    alt='Magnum'
                     src={`${process.env.PUBLIC_URL}/images/logo.png`}
                   />
                 </div>
@@ -179,49 +195,26 @@ const SignupScreen: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className='form-line clearfix'>
-                      <div className='three-width'>
-                        <label htmlFor='day'>Birth date</label>
-                        <select name='day' id='day'>
-                          <option value='1'>Day</option>
-                        </select>
-                      </div>
-                      <div className='three-width'>
-                        <label htmlFor='month'>&nbsp;</label>
-                        <select name='month' id='month'>
-                          <option value='1'>Month</option>
-                        </select>
-                      </div>
-                      <div className='three-width'>
-                        <label htmlFor='year'>&nbsp;</label>
-                        <select name='year' id='year'>
-                          <option value='1'>Year</option>
-                        </select>
+                    <div className='form-line'>
+                      <div className='full-width'>
+                        <label htmlFor='dateOfBirth'>Date of Birth</label>
+                        <DateInput
+                          value={formValues.dateOfBirth ? new Date(formValues.dateOfBirth) : null}
+                          onChange={(date: any) => setFormValues({ ...formValues, dateOfBirth: date ? new Date(date).toISOString().split('T')[0] : '' })}
+                          placeholder='Select your date of birth'
+                        />
                       </div>
                     </div>
 
-                    <div className='form-line clearfix'>
-                      <div className='three-width'>
-                        <label htmlFor='country'>Phone number</label>
-                        <select name='country' id='country'>
-                          <option value='1'>Country code</option>
-                        </select>
-                      </div>
-                      <div className='three-width'>
-                        <label htmlFor='operator'>&nbsp;</label>
-                        <select name='operator' id='operator'>
-                          <option value='1'>Operator code</option>
-                        </select>
-                      </div>
-                      <div className='three-width'>
-                        <label htmlFor='phone'>&nbsp;</label>
-                        <FormInput
-                          type='text'
-                          name='phone'
-                          onKeyDown={onlyNumbers}
-                          onChange={handleChange}
+                    <div className='form-line'>
+                      <div className='full-width'>
+                        <label htmlFor='phone'>Phone Number</label>
+                        <PhoneInput
                           value={formValues.phone}
+                          onChange={(value) => setFormValues({ ...formValues, phone: value || '' })}
                           placeholder='Enter your phone number'
+                          international
+                          defaultCountry='US'
                         />
                       </div>
                     </div>
@@ -238,7 +231,7 @@ const SignupScreen: React.FC = () => {
                     </div>
                     <div className='form-line'>
                       <div className='buttons'>
-                        <FormButton text='Sign up' />
+                        <FormButton text='Sign up' disabled={isLoading} />
                       </div>
                     </div>
                     <div className='form-line'>

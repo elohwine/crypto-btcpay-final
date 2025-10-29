@@ -8,11 +8,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BtcpayModule = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const btcpay_service_1 = require("./btcpay.service");
 let BtcpayModule = class BtcpayModule {
 };
 exports.BtcpayModule = BtcpayModule;
 exports.BtcpayModule = BtcpayModule = __decorate([
-    (0, common_1.Module)({ providers: [btcpay_service_1.BtcpayService], exports: [btcpay_service_1.BtcpayService] })
+    (0, common_1.Module)({ imports: [config_1.ConfigModule], providers: [btcpay_service_1.BtcpayService], exports: [btcpay_service_1.BtcpayService] })
 ], BtcpayModule);
 //# sourceMappingURL=btcpay.module.js.map

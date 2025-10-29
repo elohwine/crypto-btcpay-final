@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const prisma_module_1 = require("./prisma/prisma.module");
 const btcpay_module_1 = require("./modules/btcpay/btcpay.module");
+const auth_module_1 = require("./modules/auth/auth.module");
 const ledger_module_1 = require("./modules/ledger/ledger.module");
 const deposits_module_1 = require("./modules/deposits/deposits.module");
 const webhooks_module_1 = require("./modules/webhooks/webhooks.module");
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             prisma_module_1.PrismaModule,
             btcpay_module_1.BtcpayModule,
+            auth_module_1.AuthModule,
             ledger_module_1.LedgerModule,
             deposits_module_1.DepositsModule,
             webhooks_module_1.WebhooksModule,

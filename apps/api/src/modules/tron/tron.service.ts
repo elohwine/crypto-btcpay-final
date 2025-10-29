@@ -32,37 +32,56 @@ export class TronService {
   async verifyTx(txHash: string){
     if(!txHash) throw new HttpException('txHash required', HttpStatus.BAD_REQUEST);
     try {
-      // Try v1 Transactions (TronGrid) first
-      try {
-        const res = await this.client.get(`/v1/transactions/${txHash}`);
-        const data = res.data;
-        const transfers = data?.token_transfers || [];
-        if(transfers.length > 0){
-          const t = transfers[0];
-          const amount = this.normalizeAmount(t.amount, t?.decimals);
-          return { ok: true, to: t.to, amount, contract: t.token_address, raw: t };
-        }
-      } catch (e) {
-        // ignore and try fallback
+      // Use TronScan API for better TRC20 transaction info
+      const network = process.env.TRON_NETWORK || (process.env.TRON_PROVIDER_URL && process.env.TRON_PROVIDER_URL.includes('shasta') ? 'shasta' : 'mainnet');
+      const tronscanBase = network === 'mainnet' ? 'https://apilist.tronscan.org' : 'https://shastapi.tronscan.org';
+      const url = `${tronscanBase}/api/transaction-info?hash=${txHash}`;
+      
+      const resp = await this.client.get(url);
+      const tx = resp.data;
+      
+      // Basic mined + executed checks
+      if (!tx) {
+        return { ok: false, raw: tx };
       }
 
-      // Fallback to RPC endpoint used by full nodes
-      try {
-        const res2 = await this.client.post('/wallet/gettransactionbyid', { value: txHash });
-        const data2 = res2.data;
-        // try to inspect token transfers inside the receipt or contractResult
-        const tokenTransfers = data2?.token_transfers || data2?.ret || [];
-        if(tokenTransfers && tokenTransfers.length > 0){
-          const t = tokenTransfers[0];
-          const amount = this.normalizeAmount(t.amount, t?.decimals || undefined);
-          return { ok: true, to: t.to || t?.contractAddress || null, amount, contract: t.token_address || t?.contractAddress || null, raw: t };
-        }
-        return { ok: false, raw: data2 };
-      } catch (e2){
-        // final fallback
-        const detail = e2?.response?.data || e2?.message || String(e2);
-        throw new HttpException(`TRON provider error: ${detail}`, HttpStatus.BAD_GATEWAY);
+      // tronscan may return `confirmed: false` even when confirmations are present
+      // (different API semantics). Prefer confirmations >= 1 or explicit confirmed === true.
+      const confirmations = (typeof tx.confirmations === 'number') ? tx.confirmations : (tx.confirmed ? 1 : 0);
+      if (confirmations < 1 && tx.confirmed !== true) {
+        return { ok: false, raw: tx };
       }
+
+      // Ensure the contract execution succeeded (contractRet) when available
+      if ((tx.contractRet || '').toString().toUpperCase() !== 'SUCCESS') {
+        return { ok: false, raw: tx };
+      }
+      
+      // Find TRC20 transfer info
+      const tinfo = (tx.trc20TransferInfo && tx.trc20TransferInfo[0]) || (tx.tokenTransferInfo && tx.tokenTransferInfo[0]) || null;
+      if (!tinfo) {
+        return { ok: false, raw: tx };
+      }
+      
+      // Extract transfer details
+      const contract = tinfo.contract_address || tinfo.token_address;
+      const to = tinfo.to_address;
+      const amountStr = tinfo.amount_str;
+      const decimals = tinfo.decimals || this.defaultDecimals;
+      
+      // Convert amount to human readable
+      const amount = amountStr ? Number(amountStr) / Math.pow(10, decimals) : null;
+      
+      return { 
+        ok: true, 
+        to, 
+        amount, 
+        contract, 
+        raw: tx,
+        confirmations: tx.confirmations,
+        block: tx.block
+      };
+      
     } catch (e: any) {
       if (e instanceof HttpException) throw e;
       const detail = e?.response?.data || e?.message || String(e);

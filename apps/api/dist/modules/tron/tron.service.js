@@ -36,33 +36,39 @@ let TronService = class TronService {
         if (!txHash)
             throw new common_1.HttpException('txHash required', common_1.HttpStatus.BAD_REQUEST);
         try {
-            try {
-                const res = await this.client.get(`/v1/transactions/${txHash}`);
-                const data = res.data;
-                const transfers = data?.token_transfers || [];
-                if (transfers.length > 0) {
-                    const t = transfers[0];
-                    const amount = this.normalizeAmount(t.amount, t?.decimals);
-                    return { ok: true, to: t.to, amount, contract: t.token_address, raw: t };
-                }
+            const network = process.env.TRON_NETWORK || (process.env.TRON_PROVIDER_URL && process.env.TRON_PROVIDER_URL.includes('shasta') ? 'shasta' : 'mainnet');
+            const tronscanBase = network === 'mainnet' ? 'https://apilist.tronscan.org' : 'https://shastapi.tronscan.org';
+            const url = `${tronscanBase}/api/transaction-info?hash=${txHash}`;
+            const resp = await this.client.get(url);
+            const tx = resp.data;
+            if (!tx) {
+                return { ok: false, raw: tx };
             }
-            catch (e) {
+            const confirmations = (typeof tx.confirmations === 'number') ? tx.confirmations : (tx.confirmed ? 1 : 0);
+            if (confirmations < 1 && tx.confirmed !== true) {
+                return { ok: false, raw: tx };
             }
-            try {
-                const res2 = await this.client.post('/wallet/gettransactionbyid', { value: txHash });
-                const data2 = res2.data;
-                const tokenTransfers = data2?.token_transfers || data2?.ret || [];
-                if (tokenTransfers && tokenTransfers.length > 0) {
-                    const t = tokenTransfers[0];
-                    const amount = this.normalizeAmount(t.amount, t?.decimals || undefined);
-                    return { ok: true, to: t.to || t?.contractAddress || null, amount, contract: t.token_address || t?.contractAddress || null, raw: t };
-                }
-                return { ok: false, raw: data2 };
+            if ((tx.contractRet || '').toString().toUpperCase() !== 'SUCCESS') {
+                return { ok: false, raw: tx };
             }
-            catch (e2) {
-                const detail = e2?.response?.data || e2?.message || String(e2);
-                throw new common_1.HttpException(`TRON provider error: ${detail}`, common_1.HttpStatus.BAD_GATEWAY);
+            const tinfo = (tx.trc20TransferInfo && tx.trc20TransferInfo[0]) || (tx.tokenTransferInfo && tx.tokenTransferInfo[0]) || null;
+            if (!tinfo) {
+                return { ok: false, raw: tx };
             }
+            const contract = tinfo.contract_address || tinfo.token_address;
+            const to = tinfo.to_address;
+            const amountStr = tinfo.amount_str;
+            const decimals = tinfo.decimals || this.defaultDecimals;
+            const amount = amountStr ? Number(amountStr) / Math.pow(10, decimals) : null;
+            return {
+                ok: true,
+                to,
+                amount,
+                contract,
+                raw: tx,
+                confirmations: tx.confirmations,
+                block: tx.block
+            };
         }
         catch (e) {
             if (e instanceof common_1.HttpException)

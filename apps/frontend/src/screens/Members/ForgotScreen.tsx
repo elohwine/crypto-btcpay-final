@@ -58,7 +58,7 @@ const ForgotScreen: React.FC = () => {
                 <div className='form-logo center'>
                   <img
                     draggable='false'
-                    alt='Crypto Exchange'
+                    alt='Magnum'
                     src={`${process.env.PUBLIC_URL}/images/logo.png`}
                   />
                 </div>

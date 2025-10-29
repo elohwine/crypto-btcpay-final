@@ -1,29 +1,24 @@
 // components
 import SiteLayout from '../../layouts/SiteLayout';
 import Header from '../../components/Header/Header';
-import Limits from '../../components/Widgets/Limits/Limits';
 import Profile from '../../components/Widgets/Profile/Profile';
-import MyAssets from '../../components/Widgets/MyAssets/MyAssets';
 import RecentActivity from '../../components/Widgets/RecentActivity/RecentActivity';
 
 const ProfileScreen: React.FC = () => (
   <SiteLayout>
-    <Header icon='sort' title='My profile' />
-    <div className='flex flex-destroy'>
-      <div className='content-30 box-right-padding'>
+    {/* Include the global Header so navigation, theme switch and session UI appear on the Profile page */}
+    <div style={{ padding: '12px', maxWidth: 980, margin: '0 auto', boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', marginBottom: 18 }}>
+        <Header title="Profile" />
+      </div>
+
+      <div style={{ width: '100%', marginBottom: 28 }}>
         <Profile />
       </div>
-      <div className='content-70 flex-1'>
-        <MyAssets />
-      </div>
-    </div>
 
-    <div className='flex flex-space-between flex-destroy'>
-      <div className='flex-1 box-right-padding'>
+      {/* Recent activity - full width under profile and assets */}
+      <div style={{ width: '100%' }}>
         <RecentActivity />
-      </div>
-      <div className='flex-1'>
-        <Limits />
       </div>
     </div>
   </SiteLayout>

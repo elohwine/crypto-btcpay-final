@@ -1,7 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
+import SessionDropdown from './SessionDropdown';
+import ThemeSwitch from '../ThemeSwitch/ThemeSwitch';
 
 const HeaderRight: React.FC = () => {
   const location = useLocation();
+  // SessionDropdown handles auth display and signout. No need to access auth here.
 
   return (
     <div className='header-right no-select'>
@@ -47,33 +50,18 @@ const HeaderRight: React.FC = () => {
             </Link>
           </li>
           <li>
-            <Link to='/members/notifications'>
-              <span className='notification-badge'>23</span>
-              <i className='material-icons'>notifications</i>
+            <Link to='/members/notifications' style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span className='notification-badge' style={{ background: 'var(--primary)', color: 'var(--primary-contrast)' }}>23</span>
+              <i className='material-icons' style={{ color: 'var(--primary)' }}>notifications</i>
             </Link>
           </li>
         </ul>
         <ul className='header-user nowrap'>
           <li>
-            <Link to='/members'>
-              <span>Cenk SARI</span>
-              <span>@cenksari</span>
-            </Link>
+            <ThemeSwitch />
           </li>
           <li>
-            <Link to='/members'>
-              <div
-                className='profile-picture cover'
-                style={{
-                  backgroundImage: `url('https://www.cenksari.com/content/profile.jpg')`,
-                }}
-              />
-            </Link>
-          </li>
-          <li className='responsive-hide'>
-            <Link to='/' className='signout'>
-              <i className='material-icons'>power_settings_new</i>
-            </Link>
+            <SessionDropdown />
           </li>
         </ul>
       </div>

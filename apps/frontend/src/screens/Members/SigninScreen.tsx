@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 // hooks
 import useFormEvents from '../../hooks/useFormEvents';
+import { useAuth } from '../../lib/auth';
 
 // components
 import Box from '../../components/Common/Box';
@@ -13,19 +14,32 @@ import FormButton from '../../components/Forms/FormButton';
 
 // interfaces
 interface IFormProps {
-  phone: string;
+  email: string;
   password: string;
 }
 
 const SigninScreen: React.FC = () => {
   const navigate = useNavigate();
-
-  const { onlyNumbers } = useFormEvents();
-
+  useFormEvents();
+  const { signin } = useAuth();
   const [formValues, setFormValues] = useState<IFormProps>({
-    phone: '',
+    email: '',
     password: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // auth
+  const handleLogin = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      await signin(email, password);
+      navigate('/dashboard');
+    } catch (error) {
+      // Error is handled in auth.tsx with notify
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /**
    * Handles input changes in the sign-in form.
@@ -50,8 +64,7 @@ const SigninScreen: React.FC = () => {
    */
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-
-    navigate('/market');
+    handleLogin(formValues.email, formValues.password);
   };
 
   return (
@@ -64,27 +77,26 @@ const SigninScreen: React.FC = () => {
                 <div className='form-logo center'>
                   <img
                     draggable='false'
-                    alt='Crypto Exchange'
+                    alt='Magnum'
                     src={`${process.env.PUBLIC_URL}/images/logo.png`}
                   />
                 </div>
                 <h1 className='form-title center'>Sign in</h1>
                 <p className='form-desc center'>
-                  Please make sure that <strong>https://pro.cryptoexchange.com</strong> is written
+                  Please make sure that <strong>https://pro.magnum.com</strong> is written
                   in your browser's address bar.
                 </p>
                 <form noValidate className='form' onSubmit={handleSubmit}>
                   <div className='form-elements'>
                     <div className='form-line'>
                       <div className='full-width'>
-                        <label htmlFor='phone'>Phone number</label>
+                        <label htmlFor='email'>Email</label>
                         <FormInput
-                          type='text'
-                          name='phone'
-                          onKeyDown={onlyNumbers}
+                          type='email'
+                          name='email'
                           onChange={handleChange}
-                          value={formValues.phone}
-                          placeholder='Enter your phone number'
+                          value={(formValues as any).email}
+                          placeholder='Enter your email'
                         />
                       </div>
                     </div>
@@ -107,7 +119,7 @@ const SigninScreen: React.FC = () => {
                     </div>
                     <div className='form-line'>
                       <div className='buttons'>
-                        <FormButton text='Sign in' />
+                        <FormButton text='Sign in' disabled={isLoading} />
                       </div>
                     </div>
                     <div className='form-line'>

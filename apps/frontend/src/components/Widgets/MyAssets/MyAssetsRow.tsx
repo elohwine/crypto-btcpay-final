@@ -13,9 +13,9 @@ const MyAssetsRow: React.FC<IProps> = ({ item }) => {
 
   useEffect(() => {
     if (item.status === 1) {
-      setColor('green');
+      setColor('var(--success, green)');
     } else {
-      setColor('red');
+      setColor('var(--danger, red)');
     }
   }, [item.status]);
 
@@ -30,7 +30,7 @@ const MyAssetsRow: React.FC<IProps> = ({ item }) => {
       </div>
       <div className='bar-chart responsive-hide2'>
         <Sparklines data={item.barChartData} width={40} height={40}>
-          <SparklinesBars style={{ strokeWidth: 1, stroke: '#ffffff', fill: color }} />
+    <SparklinesBars style={{ strokeWidth: 1, stroke: 'var(--primary-contrast, #ffffff)', fill: color }} />
         </Sparklines>
       </div>
       <div className='standard-width'>

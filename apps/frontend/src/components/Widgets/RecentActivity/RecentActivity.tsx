@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAppTheme } from '../../../lib/themeUtils';
 
 // components
 import Box from '../../Common/Box';
@@ -68,6 +69,7 @@ const dataArray: IActivity[] = [
 
 const RecentActivity: React.FC = () => {
   const [data, setData] = useState<IActivity[]>([]);
+  const { primary } = useAppTheme();
 
   useEffect(() => {
     setData(dataArray);
@@ -85,14 +87,14 @@ const RecentActivity: React.FC = () => {
               <button type='button'>Yesterday</button>
             </li>
             <li>
-              <button type='button' className='active'>
+              <button type='button' className='active' style={{ color: primary }}>
                 Today
               </button>
             </li>
           </ul>
         </div>
       </div>
-      <div className='box-content box-content-height-nobutton'>
+      <div className='box-content'>
         {data &&
           data.map((item: IActivity) => <RecentActivityRow key={item.id.toString()} item={item} />)}
       </div>

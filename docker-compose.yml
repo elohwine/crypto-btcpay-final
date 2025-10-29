@@ -74,7 +74,9 @@ services:
       NBXPLORER_BTCRPCURL: "http://bitcoind:18332/"
       NBXPLORER_BTCRPCUSER: "bitcoin"
       NBXPLORER_BTCRPCPASSWORD: "bitcoin"
-      NBXPLORER_POSTGRES: "Host=db;Port=5432;Database=cryptoplatform;User ID=postgres;Password=postgres"
+      # Use a dedicated database for NBXplorer to avoid schema conflicts
+      # NBXplorer will initialize its schema on first start
+      NBXPLORER_POSTGRES: "Host=db;Port=5432;Database=nbxplorer;User ID=postgres;Password=postgres"
       NBXPLORER_NOAUTH: "1"
     depends_on:
       - bitcoind
@@ -92,7 +94,7 @@ services:
     image: btcpayserver/btcpayserver:2.2.1
     environment:
       BTCPAY_NETWORK: "testnet"
-      BTCPAY_POSTGRES: "User ID=postgres;Password=postgres;Host=db;Port=5432;Database=cryptoplatform"
+      BTCPAY_POSTGRES: "User ID=postgres;Password=postgres;Host=db;Port=5432;Database=btcpay"
       BTCPAY_BIND: "0.0.0.0"
       BTCPAY_PORT: "49392"
       BTCPAY_BTCEXPLORERURL: "http://nbxplorer:24445/"
@@ -125,13 +127,13 @@ services:
     ports:
       - "3001:3001"
 
-  web:
-    build: ./apps/web
+  frontend:
+    build: ./apps/frontend
     env_file: ./.env
     depends_on:
       - api
     ports:
-      - "3000:3000"
+      - "3000:80"
 
 volumes:
   db_data:

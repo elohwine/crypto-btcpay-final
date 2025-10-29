@@ -4,6 +4,7 @@ import { BtcpayService } from '../btcpay/btcpay.service';
 import { TronService } from '../tron/tron.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { randomUUID } from 'crypto';
 
 @Controller('api/deposits')
 export class DepositsController {
@@ -15,9 +16,10 @@ export class DepositsController {
   ){}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async create(@Body() body: any, @Req() req: any){
     const { currency, amount, userId, walletAddress } = body;
-    // Prefer authenticated user id (req.user.sub) if available, fall back to provided userId or seed-user for dev
+        // Prefer authenticated user id (req.user.sub) if available, fall back to provided userId or seed-user for dev
     const authUserId = req?.user?.sub;
     const user = userId || authUserId || 'seed-user'; // replace with auth enforcement when ready
 
@@ -42,7 +44,10 @@ export class DepositsController {
       console.error('[Deposits] failed to ensure user exists', err?.message || err);
       throw err;
     }
-    
+
+    // Generate deposit ID first for orderId
+    const depositId = randomUUID();
+
     // If currency is USDT and caller did not provide a destination wallet, try to derive
     // a store-configured TRON/TRC20 address. This allows the server to operate in
     // store-driven mode (no client-supplied wallet) when the BTCPay store has an address.
@@ -73,7 +78,8 @@ export class DepositsController {
     const metadata = {
       userId: user,
       // place the client-provided or store-derived address in a non-actionable field
-      customerWallet: resolvedWalletAddress || null
+      customerWallet: resolvedWalletAddress || null,
+      orderId: depositId
     };
     let invoice: any = null;
     let invoiceId: string | null = null;
@@ -152,6 +158,7 @@ export class DepositsController {
     // persist deposit using Prisma client
     const dep = await this.prisma.deposit.create({ 
       data: { 
+        id: depositId,
         userId: user, 
         invoiceId, 
         amount: amount ? Number(amount) : 0.0, 
@@ -170,40 +177,6 @@ export class DepositsController {
       storePermissionMissing,
       expiresAt: invoice?.data?.expirationTime || null 
     };
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get()
-  async listUserDeposits(@Req() req: any) {
-    const userId = req.user.sub;
-    const deposits = await this.prisma.deposit.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        invoiceId: true,
-        amount: true,
-        currency: true,
-        status: true,
-        btcpayStatus: true,
-        walletAddress: true,
-        confirmedAt: true,
-        createdAt: true,
-        txHash: true,
-      },
-    });
-    return deposits.map(dep => ({
-      depositId: dep.id,
-      invoiceId: dep.invoiceId,
-      amount: dep.amount,
-      currency: dep.currency,
-      status: dep.status,
-      btcpayStatus: dep.btcpayStatus,
-      walletAddress: dep.walletAddress,
-      confirmedAt: dep.confirmedAt,
-      createdAt: dep.createdAt,
-      txHash: dep.txHash,
-    }));
   }
 
   @Get(':id')
@@ -406,6 +379,15 @@ export class DepositsController {
     // return recent deposits for public display (no sensitive user fields)
     const rows = await this.prisma.deposit.findMany({ take: 100, orderBy: { createdAt: 'desc' }, select: { id: true, invoiceId: true, amount: true, currency: true, status: true, createdAt: true, txHash: true } });
     return rows.map(r=>({ depositId: r.id, invoiceId: r.invoiceId, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash }));
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async myDeposits(@Req() req: any){
+    const authUserId = req?.user?.sub;
+    const user = authUserId || 'seed-user';
+    const rows = await this.prisma.deposit.findMany({ where: { userId: user }, orderBy: { createdAt: 'desc' }, select: { id: true, amount: true, currency: true, status: true, createdAt: true, txHash: true, invoiceId: true, walletAddress: true } });
+    return rows.map(r => ({ depositId: r.id, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash, invoiceId: r.invoiceId, walletAddress: r.walletAddress }));
   }
 
   @Get('store/:storeId/tron-address')
