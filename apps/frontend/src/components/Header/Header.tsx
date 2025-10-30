@@ -1,6 +1,6 @@
 // components
-import HeaderLeft from './HeaderLeft';
-import HeaderRight from './HeaderRight';
+import HeaderLeft from "./HeaderLeft";
+import HeaderRight from "./HeaderRight";
 
 // interfaces
 interface IProps {
@@ -9,7 +9,7 @@ interface IProps {
 }
 
 const Header: React.FC<IProps> = ({ icon, title }) => (
-  <header className='flex flex-center flex-space-between'>
+  <header className="flex flex-center flex-space-between">
     <HeaderLeft icon={icon} title={title} />
     <HeaderRight />
   </header>

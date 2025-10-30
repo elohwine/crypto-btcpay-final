@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-import ReactApexChart from 'react-apexcharts';
+import ReactApexChart from "react-apexcharts";
 
 // components
-import Box from '../../Common/Box';
+import Box from "../../Common/Box";
 
 // interfaces
 interface ISeries {
@@ -261,14 +261,14 @@ const data: ISeries = {
   ],
   options: {
     chart: {
-      type: 'candlestick',
+      type: "candlestick",
       height: 470,
       toolbar: {
         show: false,
       },
     },
     xaxis: {
-      type: 'datetime',
+      type: "datetime",
     },
     yaxis: {
       tooltip: {
@@ -287,14 +287,14 @@ const CandleStick: React.FC = () => {
 
   return (
     <Box>
-      <div className='box-title box-vertical-padding box-horizontal-padding no-select'>
+      <div className="box-title box-vertical-padding box-horizontal-padding no-select">
         Market history
       </div>
-      <div className='box-content box-content-height-nobutton'>
+      <div className="box-content box-content-height-nobutton">
         {state && (
           <ReactApexChart
             height={470}
-            type='candlestick'
+            type="candlestick"
             series={state.series}
             options={state.options}
           />

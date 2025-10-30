@@ -1,5 +1,5 @@
 // components
-import Navbar from '../components/Navbar/Navbar';
+import Navbar from "../components/Navbar/Navbar";
 
 // interfaces
 interface IProps {
@@ -7,11 +7,11 @@ interface IProps {
 }
 
 const SiteLayout: React.FC<IProps> = ({ children }) => (
-  <div className='flex'>
-    <div className='navbar full-height responsive-hide'>
+  <div className="flex">
+    <div className="navbar full-height responsive-hide">
       <Navbar />
     </div>
-    <div className='content full-height flex-1'>{children}</div>
+    <div className="content full-height flex-1">{children}</div>
   </div>
 );
 

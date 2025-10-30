@@ -1,31 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
-import mantineTheme from '../../lib/theme';
-import AppColorSchemeContext from '../../lib/color-scheme';
-import { getPrimaryForTheme, getContrastColor } from '../../lib/themeUtils';
+import React, { useState, useEffect } from "react";
+import { MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
+import mantineTheme from "../../lib/theme";
+import AppColorSchemeContext from "../../lib/color-scheme";
+import { getPrimaryForTheme, getContrastColor } from "../../lib/themeUtils";
 
 interface UIRootProvidersProps {
   children: React.ReactNode;
 }
 
-export const UIRootProviders: React.FC<UIRootProvidersProps> = ({ children }) => {
-  const [colorScheme, setColorScheme] = useState<'light' | 'dark'>('light');
+export const UIRootProviders: React.FC<UIRootProvidersProps> = ({
+  children,
+}) => {
+  const [colorScheme, setColorScheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('mantine-color-scheme');
-      if (stored === 'light' || stored === 'dark') setColorScheme(stored);
+      const stored = localStorage.getItem("mantine-color-scheme");
+      if (stored === "light" || stored === "dark") setColorScheme(stored);
     } catch {
       // ignore
     }
   }, []);
 
-  const toggleColorScheme = (value?: 'light' | 'dark') => {
-    const next = value || (colorScheme === 'dark' ? 'light' : 'dark');
+  const toggleColorScheme = (value?: "light" | "dark") => {
+    const next = value || (colorScheme === "dark" ? "light" : "dark");
     setColorScheme(next);
     try {
-      localStorage.setItem('mantine-color-scheme', next);
+      localStorage.setItem("mantine-color-scheme", next);
     } catch {
       // ignore
     }
@@ -40,16 +42,31 @@ export const UIRootProviders: React.FC<UIRootProvidersProps> = ({ children }) =>
     try {
       const primaryShade = getPrimaryForTheme(appliedTheme, colorScheme);
       const contrast = getContrastColor(primaryShade);
-      document.documentElement.style.setProperty('--primary', primaryShade);
-      document.documentElement.style.setProperty('--primary-contrast', contrast);
+      document.documentElement.style.setProperty("--primary", primaryShade);
+      document.documentElement.style.setProperty(
+        "--primary-contrast",
+        contrast
+      );
       // also set background / surface / text CSS variables so existing CSS can react to color-scheme
       try {
-        const themeColors = require('../../lib/themeUtils').getThemeColors(appliedTheme, colorScheme);
+        const themeColors = require("../../lib/themeUtils").getThemeColors(
+          appliedTheme,
+          colorScheme
+        );
         if (themeColors) {
-          document.documentElement.style.setProperty('--bg', themeColors.bg);
-          document.documentElement.style.setProperty('--surface', themeColors.surface);
-          document.documentElement.style.setProperty('--text', themeColors.text);
-          document.documentElement.style.setProperty('--muted', themeColors.muted);
+          document.documentElement.style.setProperty("--bg", themeColors.bg);
+          document.documentElement.style.setProperty(
+            "--surface",
+            themeColors.surface
+          );
+          document.documentElement.style.setProperty(
+            "--text",
+            themeColors.text
+          );
+          document.documentElement.style.setProperty(
+            "--muted",
+            themeColors.muted
+          );
         }
       } catch (e) {
         // ignore themeColors set failure
@@ -62,7 +79,12 @@ export const UIRootProviders: React.FC<UIRootProvidersProps> = ({ children }) =>
   return (
     <AppColorSchemeContext.Provider value={{ colorScheme, toggleColorScheme }}>
       <MantineProvider theme={appliedTheme}>
-        <Notifications position="top-right" zIndex={3000} limit={4} autoClose={7000} />
+        <Notifications
+          position="top-right"
+          zIndex={3000}
+          limit={4}
+          autoClose={7000}
+        />
         {children}
       </MantineProvider>
     </AppColorSchemeContext.Provider>

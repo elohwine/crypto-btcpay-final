@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 
 type Props = {
   animationData: any;
@@ -8,7 +8,13 @@ type Props = {
   style?: React.CSSProperties;
 };
 
-const LottiePlayer: React.FC<Props> = ({ animationData, loop = false, autoplay = true, className, style }) => {
+const LottiePlayer: React.FC<Props> = ({
+  animationData,
+  loop = false,
+  autoplay = true,
+  className,
+  style,
+}) => {
   const container = useRef<HTMLDivElement | null>(null);
   const animRef = useRef<any>(null);
 
@@ -18,11 +24,11 @@ const LottiePlayer: React.FC<Props> = ({ animationData, loop = false, autoplay =
       try {
         // dynamic import to avoid hard dependency if consumer does not want lottie
         // @ts-ignore - optional dependency, may not be installed in some environments
-        const lottie: any = (await import('lottie-web')).default;
+        const lottie: any = (await import("lottie-web")).default;
         if (!mounted || !container.current) return;
         animRef.current = lottie.loadAnimation({
           container: container.current,
-          renderer: 'svg',
+          renderer: "svg",
           loop,
           autoplay,
           animationData,
@@ -35,7 +41,12 @@ const LottiePlayer: React.FC<Props> = ({ animationData, loop = false, autoplay =
     setup();
     return () => {
       mounted = false;
-      try { if (animRef.current && animRef.current.destroy) animRef.current.destroy(); } catch (e) { /* ignore */ }
+      try {
+        if (animRef.current && animRef.current.destroy)
+          animRef.current.destroy();
+      } catch (e) {
+        /* ignore */
+      }
     };
   }, [animationData, loop, autoplay]);
 

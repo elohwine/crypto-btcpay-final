@@ -5,10 +5,10 @@ interface IProps {
 }
 
 const HeaderLeft: React.FC<IProps> = ({ icon, title }) => (
-  <div className='header-left nowrap no-select'>
+  <div className="header-left nowrap no-select">
     {icon && (
-      <button type='button' className='pointer'>
-        <i className='material-icons'>{icon}</i>
+      <button type="button" className="pointer">
+        <i className="material-icons">{icon}</i>
       </button>
     )}
     <h1>{title}</h1>

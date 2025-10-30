@@ -1,11 +1,16 @@
-import '@mantine/core/styles.css';
-import '@mantine/notifications/styles.css';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { UIRootProviders, LoaderProvider, ProgressOverlay, RouterLoader } from './ui';
+import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import {
+  UIRootProviders,
+  LoaderProvider,
+  ProgressOverlay,
+  RouterLoader,
+} from "./ui";
 
-import App from './App';
-import { AuthProvider } from './lib/auth';
+import App from "./App";
+import { AuthProvider } from "./lib/auth";
 
 const AppWithUI: React.FC = () => {
   return (
@@ -23,6 +28,8 @@ const AppWithUI: React.FC = () => {
   );
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+const root = ReactDOM.createRoot(
+  document.getElementById("root") as HTMLElement
+);
 
 root.render(<AppWithUI />);

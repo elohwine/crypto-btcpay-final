@@ -1,5 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
-import { useAppTheme } from '../../lib/themeUtils';
+import { Link, useLocation } from "react-router-dom";
+import { useAppTheme } from "../../lib/themeUtils";
 
 // interfaces
 interface IProps {
@@ -15,10 +15,18 @@ const NavbarButton: React.FC<IProps> = ({ url, icon, title }) => {
   return (
     <Link
       to={url}
-      className={location.pathname.toLowerCase().includes(url) ? 'active nowrap' : 'passive nowrap'}
-      style={location.pathname.toLowerCase().includes(url) ? { color: primary } : undefined}
+      className={
+        location.pathname.toLowerCase().includes(url)
+          ? "active nowrap"
+          : "passive nowrap"
+      }
+      style={
+        location.pathname.toLowerCase().includes(url)
+          ? { color: primary }
+          : undefined
+      }
     >
-      <i className='material-icons'>{icon}</i>
+      <i className="material-icons">{icon}</i>
       <span>{title}</span>
     </Link>
   );

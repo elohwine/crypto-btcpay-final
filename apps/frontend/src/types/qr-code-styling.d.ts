@@ -1,4 +1,4 @@
-declare module 'qr-code-styling' {
+declare module "qr-code-styling" {
   // Minimal declaration to satisfy TypeScript for the external library.
   // The library exposes a class that is constructed with an options object and
   // has `update`, `append`, `getRawData`, and `getElement` methods among others.

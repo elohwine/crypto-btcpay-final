@@ -1,16 +1,22 @@
-import React, { useEffect, useRef } from 'react';
-import QRCodeStyling from 'qr-code-styling';
-import { useAppTheme } from '../lib/themeUtils';
+import React, { useEffect, useRef } from "react";
+import QRCodeStyling from "qr-code-styling";
+import { useAppTheme } from "../lib/themeUtils";
 
 type Props = {
   data: string;
   logoSrc?: string | null;
   size?: number;
   imageSize?: number; // fraction 0..1
-  type?: 'svg' | 'canvas';
+  type?: "svg" | "canvas";
 };
 
-const QRWithLogo: React.FC<Props> = ({ data, logoSrc = null, size = 200, imageSize = 0.18, type = 'svg' }) => {
+const QRWithLogo: React.FC<Props> = ({
+  data,
+  logoSrc = null,
+  size = 200,
+  imageSize = 0.18,
+  type = "svg",
+}) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const qrRef = useRef<any | null>(null);
   const { primary } = useAppTheme();
@@ -20,35 +26,35 @@ const QRWithLogo: React.FC<Props> = ({ data, logoSrc = null, size = 200, imageSi
     qrRef.current = new (QRCodeStyling as any)({
       width: size,
       height: size,
-      data: data || '',
+      data: data || "",
       margin: 8,
       type,
       image: logoSrc || undefined,
       dotsOptions: {
-        color: primary || 'var(--text)',
-        type: 'rounded',
+        color: primary || "var(--text)",
+        type: "rounded",
       },
       cornersSquareOptions: {
-        color: primary || 'var(--text)',
-        type: 'extra-rounded',
+        color: primary || "var(--text)",
+        type: "extra-rounded",
       },
       imageOptions: {
-        crossOrigin: 'anonymous',
+        crossOrigin: "anonymous",
         margin: 6,
         hideBackgroundDots: true,
         imageSize: imageSize,
       },
       qrOptions: {
-        errorCorrectionLevel: 'H',
+        errorCorrectionLevel: "H",
       },
     });
 
-  mountRef.current.innerHTML = '';
-  qrRef.current.append(mountRef.current);
+    mountRef.current.innerHTML = "";
+    qrRef.current.append(mountRef.current);
 
     return () => {
       try {
-        if (mountRef.current) mountRef.current.innerHTML = '';
+        if (mountRef.current) mountRef.current.innerHTML = "";
         qrRef.current = null;
       } catch (e) {
         // ignore
@@ -62,20 +68,26 @@ const QRWithLogo: React.FC<Props> = ({ data, logoSrc = null, size = 200, imageSi
     if (!qrRef.current) return;
     try {
       qrRef.current.update({
-        data: data || '',
+        data: data || "",
         image: logoSrc || undefined,
         width: size,
         height: size,
         imageOptions: { imageSize },
-  dotsOptions: { color: primary || 'var(--text)' },
-  cornersSquareOptions: { color: primary || 'var(--text)' },
+        dotsOptions: { color: primary || "var(--text)" },
+        cornersSquareOptions: { color: primary || "var(--text)" },
       });
     } catch (e) {
       // ignore update errors
     }
   }, [data, logoSrc, size, imageSize, primary]);
 
-  return <div ref={mountRef} style={{ width: size, height: size, display: 'inline-block' }} aria-hidden />;
+  return (
+    <div
+      ref={mountRef}
+      style={{ width: size, height: size, display: "inline-block" }}
+      aria-hidden
+    />
+  );
 };
 
 export default QRWithLogo;

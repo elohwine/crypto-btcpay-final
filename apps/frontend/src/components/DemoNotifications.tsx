@@ -1,25 +1,26 @@
-import React from 'react';
-import { Button, Group } from '@mantine/core';
-import { notify } from '../ui/notifications/notify';
-import { useLoader } from '../ui/loading/loaderContext';
-import { useProgress } from '../ui/progress/ProgressOverlay';
+import React from "react";
+import { Button, Group } from "@mantine/core";
+import { notify } from "../ui/notifications/notify";
+import { useLoader } from "../ui/loading/loaderContext";
+import { useProgress } from "../ui/progress/ProgressOverlay";
 
 export const DemoNotifications: React.FC = () => {
   const { show: showLoader, hide: hideLoader } = useLoader();
   const { start, update, complete } = useProgress();
 
-  const handleSuccess = () => notify.success('Operation completed successfully!');
-  const handleError = () => notify.error('Something went wrong!');
-  const handleWarn = () => notify.warn('This is a warning message.');
-  const handleInfo = () => notify.info('This is an info message.');
+  const handleSuccess = () =>
+    notify.success("Operation completed successfully!");
+  const handleError = () => notify.error("Something went wrong!");
+  const handleWarn = () => notify.warn("This is a warning message.");
+  const handleInfo = () => notify.info("This is an info message.");
 
   const handleLoader = () => {
-    showLoader('Simulating loading...');
+    showLoader("Simulating loading...");
     setTimeout(() => hideLoader(), 3000);
   };
 
   const handleProgress = () => {
-    const id = start('demo', 'Processing...');
+    const id = start("demo", "Processing...");
     let p = 0;
     const interval = setInterval(() => {
       p += 10;
@@ -27,7 +28,7 @@ export const DemoNotifications: React.FC = () => {
       if (p >= 100) {
         clearInterval(interval);
         complete(id);
-        notify.success('Progress completed!');
+        notify.success("Progress completed!");
       }
     }, 500);
   };

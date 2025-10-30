@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { FullScreenLoader } from './FullScreenLoader';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
+import { FullScreenLoader } from "./FullScreenLoader";
 
 interface LoaderContextValue {
   show: (message?: string, onCancel?: () => void) => void;
@@ -8,17 +15,19 @@ interface LoaderContextValue {
 
 const LoaderContext = createContext<LoaderContextValue | undefined>(undefined);
 
-export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   // stacking count for concurrent show/hide calls
   const countRef = useRef(0);
   const [visible, setVisible] = useState(false);
-  const [message, setMessage] = useState<string>('');
+  const [message, setMessage] = useState<string>("");
   const [onCancel, setOnCancel] = useState<(() => void) | undefined>();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const show = useCallback((msg?: string, cancel?: () => void) => {
     countRef.current += 1;
-    setMessage(msg || 'Loading...');
+    setMessage(msg || "Loading...");
     setOnCancel(() => cancel);
     // Debounce the visible flag to avoid flicker (200ms)
     if (debounceTimer.current) {
@@ -48,7 +57,7 @@ export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         debounceTimer.current = null;
       }
       setVisible(false);
-      setMessage('');
+      setMessage("");
       setOnCancel(undefined);
     }
   }, []);
@@ -65,7 +74,11 @@ export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <LoaderContext.Provider value={{ show, hide }}>
-      <FullScreenLoader visible={visible} message={message} onCancel={onCancel} />
+      <FullScreenLoader
+        visible={visible}
+        message={message}
+        onCancel={onCancel}
+      />
       {children}
     </LoaderContext.Provider>
   );
@@ -73,7 +86,7 @@ export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 export const useLoader = () => {
   const ctx = useContext(LoaderContext);
-  if (!ctx) throw new Error('useLoader must be used within LoaderProvider');
+  if (!ctx) throw new Error("useLoader must be used within LoaderProvider");
   return ctx;
 };
 

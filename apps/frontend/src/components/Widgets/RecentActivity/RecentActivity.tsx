@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useAppTheme } from '../../../lib/themeUtils';
+import { useState, useEffect } from "react";
+import { useAppTheme } from "../../../lib/themeUtils";
 
 // components
-import Box from '../../Common/Box';
-import RecentActivityRow from './RecentActivityRow';
+import Box from "../../Common/Box";
+import RecentActivityRow from "./RecentActivityRow";
 
 // interfaces
 interface IActivity {
@@ -20,49 +20,49 @@ const dataArray: IActivity[] = [
   {
     id: 1,
     type: 1,
-    time: '06:25:57',
-    amount: '212,50',
-    currency: 'TRY',
+    time: "06:25:57",
+    amount: "212,50",
+    currency: "TRY",
     status: 1,
   },
   {
     id: 2,
     type: 1,
-    time: '08:30:25',
-    amount: '1.465,85',
-    currency: 'TRY',
+    time: "08:30:25",
+    amount: "1.465,85",
+    currency: "TRY",
     status: 1,
   },
   {
     id: 3,
     type: 2,
-    time: '09:16:11',
-    amount: '6.000,00',
-    currency: 'TRY',
+    time: "09:16:11",
+    amount: "6.000,00",
+    currency: "TRY",
     status: 2,
   },
   {
     id: 4,
     type: 1,
-    time: '12:05:03',
-    amount: '2.225,35',
-    currency: 'TRY',
+    time: "12:05:03",
+    amount: "2.225,35",
+    currency: "TRY",
     status: 1,
   },
   {
     id: 5,
     type: 1,
-    time: '14:46:53',
-    amount: '128,01',
-    currency: 'TRY',
+    time: "14:46:53",
+    amount: "128,01",
+    currency: "TRY",
     status: 3,
   },
   {
     id: 6,
     type: 2,
-    time: '18:01:03',
-    amount: '350,00',
-    currency: 'TRY',
+    time: "18:01:03",
+    amount: "350,00",
+    currency: "TRY",
     status: 2,
   },
 ];
@@ -77,26 +77,32 @@ const RecentActivity: React.FC = () => {
 
   return (
     <Box>
-      <div className='box-title box-vertical-padding box-horizontal-padding no-select'>
-        <div className='flex flex-center flex-space-between'>
+      <div className="box-title box-vertical-padding box-horizontal-padding no-select">
+        <div className="flex flex-center flex-space-between">
           <div>
             <p>History</p>
           </div>
           <ul>
             <li>
-              <button type='button'>Yesterday</button>
+              <button type="button">Yesterday</button>
             </li>
             <li>
-              <button type='button' className='active' style={{ color: primary }}>
+              <button
+                type="button"
+                className="active"
+                style={{ color: primary }}
+              >
                 Today
               </button>
             </li>
           </ul>
         </div>
       </div>
-      <div className='box-content'>
+      <div className="box-content">
         {data &&
-          data.map((item: IActivity) => <RecentActivityRow key={item.id.toString()} item={item} />)}
+          data.map((item: IActivity) => (
+            <RecentActivityRow key={item.id.toString()} item={item} />
+          ))}
       </div>
     </Box>
   );

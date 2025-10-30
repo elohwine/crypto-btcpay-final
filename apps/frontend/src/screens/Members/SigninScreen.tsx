@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from "react-router-dom";
 
 // hooks
-import useFormEvents from '../../hooks/useFormEvents';
-import { useAuth } from '../../lib/auth';
+import useFormEvents from "../../hooks/useFormEvents";
+import { useAuth } from "../../lib/auth";
 
 // components
-import Box from '../../components/Common/Box';
-import MainLayout from '../../layouts/MainLayout';
-import FormInput from '../../components/Forms/FormInput';
-import FormButton from '../../components/Forms/FormButton';
+import Box from "../../components/Common/Box";
+import MainLayout from "../../layouts/MainLayout";
+import FormInput from "../../components/Forms/FormInput";
+import FormButton from "../../components/Forms/FormButton";
 
 // interfaces
 interface IFormProps {
@@ -23,17 +23,17 @@ const SigninScreen: React.FC = () => {
   useFormEvents();
   const { signin } = useAuth();
   const [formValues, setFormValues] = useState<IFormProps>({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // auth
   const handleLogin = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       await signin(email, password);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
       // Error is handled in auth.tsx with notify
     } finally {
@@ -69,64 +69,66 @@ const SigninScreen: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className='flex flex-center full-height'>
-        <div className='login no-select'>
+      <div className="flex flex-center full-height">
+        <div className="login no-select">
           <Box>
-            <div className='box-vertical-padding box-horizontal-padding'>
+            <div className="box-vertical-padding box-horizontal-padding">
               <div>
-                <div className='form-logo center'>
+                <div className="form-logo center">
                   <img
-                    draggable='false'
-                    alt='Magnum'
+                    draggable="false"
+                    alt="Magnum"
                     src={`${process.env.PUBLIC_URL}/images/logo.png`}
                   />
                 </div>
-                <h1 className='form-title center'>Sign in</h1>
-                <p className='form-desc center'>
-                  Please make sure that <strong>https://pro.magnum.com</strong> is written
-                  in your browser's address bar.
+                <h1 className="form-title center">Sign in</h1>
+                <p className="form-desc center">
+                  Please make sure that <strong>https://pro.magnum.com</strong>{" "}
+                  is written in your browser's address bar.
                 </p>
-                <form noValidate className='form' onSubmit={handleSubmit}>
-                  <div className='form-elements'>
-                    <div className='form-line'>
-                      <div className='full-width'>
-                        <label htmlFor='email'>Email</label>
+                <form noValidate className="form" onSubmit={handleSubmit}>
+                  <div className="form-elements">
+                    <div className="form-line">
+                      <div className="full-width">
+                        <label htmlFor="email">Email</label>
                         <FormInput
-                          type='email'
-                          name='email'
+                          type="email"
+                          name="email"
                           onChange={handleChange}
                           value={(formValues as any).email}
-                          placeholder='Enter your email'
+                          placeholder="Enter your email"
                         />
                       </div>
                     </div>
-                    <div className='form-line'>
-                      <div className='full-width'>
-                        <label htmlFor='password'>Password</label>
+                    <div className="form-line">
+                      <div className="full-width">
+                        <label htmlFor="password">Password</label>
                         <FormInput
-                          type='password'
-                          name='password'
+                          type="password"
+                          name="password"
                           onChange={handleChange}
                           value={formValues.password}
-                          placeholder='Enter your password'
+                          placeholder="Enter your password"
                         />
                       </div>
                     </div>
-                    <div className='form-line'>
-                      <div className='full-width right'>
-                        <Link to='/members/forgot-password'>Forgot password</Link>
+                    <div className="form-line">
+                      <div className="full-width right">
+                        <Link to="/members/forgot-password">
+                          Forgot password
+                        </Link>
                       </div>
                     </div>
-                    <div className='form-line'>
-                      <div className='buttons'>
-                        <FormButton text='Sign in' disabled={isLoading} />
+                    <div className="form-line">
+                      <div className="buttons">
+                        <FormButton text="Sign in" disabled={isLoading} />
                       </div>
                     </div>
-                    <div className='form-line'>
-                      <div className='center'>
+                    <div className="form-line">
+                      <div className="center">
                         <p>
-                          If you don't have an account, create a{' '}
-                          <Link to='/members/signup'>new account</Link>.
+                          If you don't have an account, create a{" "}
+                          <Link to="/members/signup">new account</Link>.
                         </p>
                       </div>
                     </div>

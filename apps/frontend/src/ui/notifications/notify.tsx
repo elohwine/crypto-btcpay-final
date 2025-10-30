@@ -1,5 +1,10 @@
-import { notifications } from '@mantine/notifications';
-import { IconCheck, IconX, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
+import { notifications } from "@mantine/notifications";
+import {
+  IconCheck,
+  IconX,
+  IconInfoCircle,
+  IconAlertTriangle,
+} from "@tabler/icons-react";
 
 export interface NotifyOptions {
   title?: string;
@@ -13,7 +18,7 @@ export interface NotifyOptions {
 const dedupeMap = new Map<string, number>();
 
 const notify = {
-  success: (message: string, opts?: Omit<NotifyOptions, 'message'>) => {
+  success: (message: string, opts?: Omit<NotifyOptions, "message">) => {
     const key = opts?.id || message;
     if (dedupeMap.has(key)) return;
     dedupeMap.set(key, Date.now());
@@ -21,9 +26,9 @@ const notify = {
 
     notifications.show({
       id: key,
-      title: opts?.title || 'Success',
+      title: opts?.title || "Success",
       message,
-      color: 'teal',
+      color: "teal",
       icon: <IconCheck size={18} />,
       autoClose: opts?.autoClose ?? 7000,
       onClose: opts?.onClose,
@@ -31,7 +36,7 @@ const notify = {
     });
   },
 
-  warn: (message: string, opts?: Omit<NotifyOptions, 'message'>) => {
+  warn: (message: string, opts?: Omit<NotifyOptions, "message">) => {
     const key = opts?.id || message;
     if (dedupeMap.has(key)) return;
     dedupeMap.set(key, Date.now());
@@ -39,9 +44,9 @@ const notify = {
 
     notifications.show({
       id: key,
-      title: opts?.title || 'Warning',
+      title: opts?.title || "Warning",
       message,
-      color: 'orange',
+      color: "orange",
       icon: <IconAlertTriangle size={18} />,
       autoClose: opts?.autoClose ?? 7000,
       onClose: opts?.onClose,
@@ -49,7 +54,7 @@ const notify = {
     });
   },
 
-  error: (message: string, opts?: Omit<NotifyOptions, 'message'>) => {
+  error: (message: string, opts?: Omit<NotifyOptions, "message">) => {
     const key = opts?.id || message;
     if (dedupeMap.has(key)) return;
     dedupeMap.set(key, Date.now());
@@ -57,9 +62,9 @@ const notify = {
 
     notifications.show({
       id: key,
-      title: opts?.title || 'Error',
+      title: opts?.title || "Error",
       message,
-      color: 'red',
+      color: "red",
       icon: <IconX size={18} />,
       autoClose: opts?.autoClose ?? 7000,
       onClose: opts?.onClose,
@@ -67,7 +72,7 @@ const notify = {
     });
   },
 
-  info: (message: string, opts?: Omit<NotifyOptions, 'message'>) => {
+  info: (message: string, opts?: Omit<NotifyOptions, "message">) => {
     const key = opts?.id || message;
     if (dedupeMap.has(key)) return;
     dedupeMap.set(key, Date.now());
@@ -75,9 +80,9 @@ const notify = {
 
     notifications.show({
       id: key,
-      title: opts?.title || 'Info',
+      title: opts?.title || "Info",
       message,
-      color: 'blue',
+      color: "blue",
       icon: <IconInfoCircle size={18} />,
       autoClose: opts?.autoClose ?? 7000,
       onClose: opts?.onClose,
@@ -88,7 +93,7 @@ const notify = {
   showProgress: (id: string, initial = 0) => {
     notifications.show({
       id,
-      title: 'Processing',
+      title: "Processing",
       message: `${initial}%`,
       loading: true,
       autoClose: false,
@@ -106,9 +111,9 @@ const notify = {
     notifications.update({
       id,
       loading: false,
-      title: success ? 'Done' : 'Failed',
-      message: success ? 'Finished' : 'Operation failed',
-      color: success ? 'teal' : 'red',
+      title: success ? "Done" : "Failed",
+      message: success ? "Finished" : "Operation failed",
+      color: success ? "teal" : "red",
       icon: success ? <IconCheck size={18} /> : <IconX size={18} />,
       autoClose: 3000,
     });

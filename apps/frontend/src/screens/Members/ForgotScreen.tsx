@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 // hooks
-import useFormEvents from '../../hooks/useFormEvents';
+import useFormEvents from "../../hooks/useFormEvents";
 
 // components
-import Box from '../../components/Common/Box';
-import MainLayout from '../../layouts/MainLayout';
-import FormInput from '../../components/Forms/FormInput';
-import FormButton from '../../components/Forms/FormButton';
+import Box from "../../components/Common/Box";
+import MainLayout from "../../layouts/MainLayout";
+import FormInput from "../../components/Forms/FormInput";
+import FormButton from "../../components/Forms/FormButton";
 
 // interfaces
 interface IFormProps {
@@ -20,7 +20,7 @@ const ForgotScreen: React.FC = () => {
   const { onlyNumbers } = useFormEvents();
 
   const [formValues, setFormValues] = useState<IFormProps>({
-    phone: '',
+    phone: "",
   });
 
   /**
@@ -50,53 +50,53 @@ const ForgotScreen: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className='flex flex-center full-height'>
-        <div className='login no-select'>
+      <div className="flex flex-center full-height">
+        <div className="login no-select">
           <Box>
-            <div className='box-vertical-padding box-horizontal-padding'>
+            <div className="box-vertical-padding box-horizontal-padding">
               <div>
-                <div className='form-logo center'>
+                <div className="form-logo center">
                   <img
-                    draggable='false'
-                    alt='Magnum'
+                    draggable="false"
+                    alt="Magnum"
                     src={`${process.env.PUBLIC_URL}/images/logo.png`}
                   />
                 </div>
-                <h1 className='form-title center'>Password reset</h1>
-                <p className='form-desc center'>
-                  Please enter your registered phone number. We will send you the password reset
-                  information.
+                <h1 className="form-title center">Password reset</h1>
+                <p className="form-desc center">
+                  Please enter your registered phone number. We will send you
+                  the password reset information.
                 </p>
-                <form className='form' onSubmit={handleSubmit} noValidate>
-                  <div className='form-elements'>
-                    <div className='form-line'>
-                      <div className='full-width'>
-                        <label htmlFor='phone'>Phone number</label>
+                <form className="form" onSubmit={handleSubmit} noValidate>
+                  <div className="form-elements">
+                    <div className="form-line">
+                      <div className="full-width">
+                        <label htmlFor="phone">Phone number</label>
                         <FormInput
-                          type='text'
-                          name='phone'
+                          type="text"
+                          name="phone"
                           onKeyDown={onlyNumbers}
                           onChange={handleChange}
                           value={formValues.phone}
-                          placeholder='Enter your phone number'
+                          placeholder="Enter your phone number"
                         />
                       </div>
                     </div>
-                    <div className='form-line'>
-                      <div className='full-width right'>
-                        <Link to='/'>Sign in</Link>
+                    <div className="form-line">
+                      <div className="full-width right">
+                        <Link to="/">Sign in</Link>
                       </div>
                     </div>
-                    <div className='form-line'>
-                      <div className='buttons'>
-                        <FormButton text='Send' />
+                    <div className="form-line">
+                      <div className="buttons">
+                        <FormButton text="Send" />
                       </div>
                     </div>
-                    <div className='form-line'>
-                      <div className='center'>
+                    <div className="form-line">
+                      <div className="center">
                         <p>
-                          If you don't have an account, create a{' '}
-                          <Link to='/members/signup'>new account</Link>.
+                          If you don't have an account, create a{" "}
+                          <Link to="/members/signup">new account</Link>.
                         </p>
                       </div>
                     </div>

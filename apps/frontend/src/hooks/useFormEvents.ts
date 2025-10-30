@@ -1,5 +1,5 @@
 const useFormEvents = () => {
-  const filter = ['Tab', 'Enter', 'Backspace', 'ArrowLeft', 'ArrowRight'];
+  const filter = ["Tab", "Enter", "Backspace", "ArrowLeft", "ArrowRight"];
 
   /**
    * Handles the `keydown` event on an input field to only allow certain characters.
@@ -9,7 +9,8 @@ const useFormEvents = () => {
   const onlyEmail = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     const { key } = e;
 
-    if (!/[@a-zA-Z0-9._-]/.test(key) && filter.indexOf(key) === -1) e.preventDefault();
+    if (!/[@a-zA-Z0-9._-]/.test(key) && filter.indexOf(key) === -1)
+      e.preventDefault();
   };
 
   /**
@@ -31,7 +32,8 @@ const useFormEvents = () => {
   const onlyAlphaNumeric = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     const { key } = e;
 
-    if (!/[a-z0-9_]/.test(key) && filter.indexOf(key) === -1) e.preventDefault();
+    if (!/[a-z0-9_]/.test(key) && filter.indexOf(key) === -1)
+      e.preventDefault();
   };
 
   return { onlyEmail, onlyNumbers, onlyAlphaNumeric };
