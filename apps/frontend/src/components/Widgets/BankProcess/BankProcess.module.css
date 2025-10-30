@@ -1,0 +1,328 @@
+/* BankProcess.module.css — full, final styles (all classes used by component) */
+
+/* design tokens */
+:root{
+  --primary: var(--primary);
+  /* prefer runtime-provided variants; fall back to sensible opacities based on the JS primary color */
+  --primary-opaque: var(--primary-opaque, rgba(65,63,188,0.08));
+  --primary-strong: var(--primary-strong, rgba(65,63,188,0.12));
+  --card-bg: var(--surface);
+  --card-radius: 20px;
+  --card-padding: 20px;
+  --muted: var(--muted);
+  --success: var(--success, #00b638);
+  --card-border: var(--surface-border, rgba(0,0,0,0.04));
+}
+
+/* Base card */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  margin-bottom: 20px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  box-sizing:border-box;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.card:hover{
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 6px 18px var(--primary-strong);
+  transform: translateY(-2px);
+  border-color: var(--primary-strong);
+}
+
+/* unified top header above the columns */
+.unifiedHeader {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.unifiedHeaderLeft { display:flex; gap:12px; align-items:center; }
+.unifiedTitle { font-size:18px; font-weight:700; color:var(--text); display:flex; gap:10px; align-items:center; }
+.unifiedSubtitle { font-size:13px; color:var(--muted); }
+
+/* small accent bar (thin) to the right of header — subtle */
+.headerAccent {
+  height:6px;
+  width:140px;
+  border-radius:6px;
+  background: linear-gradient(90deg, var(--primary-strong, rgba(65,63,188,0.14)), var(--primary-opaque, rgba(65,63,188,0.04)));
+}
+
+/* columns equal height */
+.columns { display:flex; gap:20px; align-items:stretch; width:100%; box-sizing:border-box; }
+.leftCol { flex:0 0 60%; min-width:360px; display:flex; flex-direction:column; gap:12px; }
+.rightCol { flex:0 0 40%; min-width:300px; display:flex; flex-direction:column; gap:12px; }
+.cardInnerFill { display:flex; flex-direction:column; flex:1 1 auto; gap:12px; }
+/* small chips used as subheads inside cards */
+.chip {
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  background: var(--surface-hover, rgba(0,0,0,0.03));
+  font-size:12px;
+  font-weight:600;
+  color:var(--text);
+    border: 1px solid var(--card-border);
+}
+.chipActive { background: linear-gradient(90deg,var(--primary-opaque, rgba(65,63,188,0.08)), var(--primary-opaque, rgba(65,63,188,0.02))); color:var(--primary); box-shadow: 0 6px 18px var(--primary-opaque, rgba(65,63,188,0.04)); }
+
+/* compact header area inside the left/top of card */
+.cardHeaderCompact { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.netBadge {
+  padding:4px 8px;
+  border-radius:999px;
+  font-weight:700;
+  font-size:11px;
+  color:var(--primary-contrast);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark, #2d1b69));
+  box-shadow: 0 6px 18px var(--primary-strong, rgba(65,63,188,0.12));
+  border: 1px solid var(--surface-border, rgba(255,255,255,0.06));
+}
+
+/* QR wrapper — center the QR nicely inside the card */
+.qrWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* reduced vertical padding so QR sits closer to card edges (≈60% reduction) */
+  padding: 6px 0;
+  box-sizing: border-box;
+}
+.qrContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 260px;
+}
+.qrContainer > svg, .qrContainer img, .qrContainer canvas {
+  width: 100%;
+  height: auto;
+  max-width: 220px;
+  display: block;
+}
+
+/* QR card background for professional framing */
+.qrCard {
+  background: linear-gradient(135deg, var(--primary-opaque, rgba(65,63,188,0.02)), rgba(255,255,255,0.9));
+  border: 1px solid var(--primary-opaque, rgba(65,63,188,0.1));
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s ease;
+}
+.qrCard:hover {
+  box-shadow: 0 4px 12px var(--primary-opaque, rgba(65,63,188,0.1));
+}
+
+/* Lottie overlay inside QR card */
+.lottieOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 6;
+}
+.lottieSmall { width: 140px; height: 140px; }
+
+/* ensure QR has breathing room from tiles below */
+.qrWrap { margin-bottom: 12px; }
+
+/* Currency badge area above the form to utilize vertical space */
+.currencyBadgeContainer { display:flex; align-items:center; justify-content:center; padding: 8px 0 4px 0; }
+.currencyBadge {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: var(--surface);
+  border: 1px solid var(--surface-border, rgba(0,0,0,0.04));
+  box-shadow: 0 6px 18px rgba(20,20,50,0.04);
+}
+.btcBadge { width:72px; height:72px; border-radius:999px; background: var(--btc, #f7931a); display:flex; align-items:center; justify-content:center; }
+.currencyText { font-weight:700; font-size:18px; }
+
+/* info tiles */
+/* Info tiles: align label and value horizontally so all tiles line up */
+.infoTile, .infoTilePrimary {
+  background: var(--surface);
+  border-radius:8px;
+  padding:12px 10px;
+  font-size:13px;
+  border:1px solid var(--card-border);
+  display:flex;
+  flex-direction:column; /* label on top, value beneath */
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:6px;
+  min-height:72px; /* accommodate up to two lines */
+  box-sizing:border-box;
+  overflow:visible;
+  word-break:break-word;
+  transition: background 0.2s ease, border-bottom 0.2s ease;
+}
+.infoTile:hover {
+  background: var(--surface-hover, var(--primary-opaque, rgba(65,63,188,0.03)));
+}
+.infoTilePrimary { background: var(--primary-opaque, rgba(65,63,188,0.04)); border-color: var(--primary-opaque, rgba(65,63,188,0.04)); }
+.infoTile.hasData {
+  border-bottom: 2px solid var(--primary);
+}
+
+/* value inside info tiles: monospace, truncate if too long */
+.tileValue {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--text);
+  /* allow wrapping and clamp to two lines */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+  line-height: 1.4;
+}
+
+/* tiles row: invoice & id expand, status shrinks to content width */
+.tilesRow { display:flex; gap:8px; margin-top:16px; align-items:flex-start; flex-wrap:wrap; }
+.tilesRow > .infoTile { flex: 1 1 0; min-width: 160px; }
+.tilesRow > .infoTilePrimary { flex: 0 0 auto; min-width: 110px; align-self:flex-start; }
+
+/* status alert visual variants */
+.statusAlert { border-left: 4px solid transparent; padding-left: 8px; }
+.statusSuccess { border-left-color: var(--primary); }
+.statusPending { border-left-color: var(--primary); }
+.statusFailed { border-left-color: var(--primary); }
+
+/* tile value row (value + copy) */
+.tileValueRow { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; }
+.tileCopyBtn { background: transparent; border: none; padding:6px; border-radius:8px; cursor:pointer; color: var(--primary); }
+.tileCopyBtn:hover { background: var(--primary-opaque, rgba(65,63,188,0.04)); }
+
+/* spinner for status */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* form actions spacing */
+.formActions { margin-top: 18px; display:flex; gap:8px; align-items:center; justify-content:center; }
+
+/* deposit form layout helpers */
+.depositForm { display:flex; flex-direction:column; gap:12px; }
+.depositForm .mantineField { margin-bottom: 8px; }
+
+/* inputs focus states */
+.input, .select {
+  padding:10px; border-radius:8px; border:1px solid var(--surface-border, #dadada); font-size:14px; background:var(--surface); transition: border-color .12s ease, box-shadow .12s ease, transform .06s ease;
+}
+.input:focus, .select:focus {
+  outline:none;
+  border-color: var(--primary);
+  box-shadow: 0 8px 20px var(--primary-opaque, rgba(65,63,188,0.06)), 0 0 0 3px var(--primary-strong, rgba(65,63,188,0.2));
+  transform: translateY(-1px);
+}
+
+/* primary (green) CTA */
+.primaryBtn {
+  width:100%;
+  background: linear-gradient(135deg, var(--success, #00b638) 0%, var(--success-dark, #00972d) 100%);
+  border:none;
+  border-radius:12px;
+  padding:14px 16px;
+  color:var(--primary-contrast, #fff);
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow: 0 4px 15px rgba(0,182,56,0.18);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.primaryBtn:hover{ transform: translateY(-2px); }
+.primaryBtn:focus { outline: 3px solid rgba(0,182,56,0.12); outline-offset:2px; }
+
+/* connect btn (purple) */
+.connectBtn {
+  background: linear-gradient(135deg, var(--connect-start, #667eea) 0%, var(--connect-end, #764ba2) 100%);
+  border:none;
+  border-radius:12px;
+  padding:12px 18px;
+  color:var(--primary-contrast, #fff);
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow: 0 4px 15px rgba(102,126,234,0.18);
+}
+.connectBtn:hover { transform: translateY(-2px); }
+.connectBtn:focus { outline: 3px solid rgba(102,126,234,0.12); outline-offset:2px; }
+
+/* ghost pill */
+.ghostBtn {
+  background:var(--surface);
+  border:1px solid var(--surface-border, #e6e6e6);
+  padding:6px 10px;
+  border-radius:999px;
+  cursor:pointer;
+  font-weight:600;
+  font-size:13px;
+}
+.ghostBtn:hover { background: var(--primary-opaque, rgba(65,63,188,0.02)); border-color: var(--primary-opaque, rgba(65,63,188,0.06)); box-shadow: 0 6px 16px var(--primary-opaque, rgba(65,63,188,0.04)); }
+.ghostBtn[aria-pressed="true"] { border-color: var(--primary-strong, rgba(65,63,188,0.18)); box-shadow: 0 8px 20px var(--primary-opaque, rgba(65,63,188,0.04)); color: var(--primary); background: var(--primary-opaque); }
+
+/* primary-style ghost used for copy CTAs that should read as brand actions */
+.ghostPrimary {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  border: none;
+  box-shadow: 0 6px 18px rgba(65,63,188,0.16);
+}
+
+/* secondary purple */
+.secondaryPurple {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark, #2d1b69) 100%);
+  color: var(--primary-contrast);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* status area */
+.statusBox { background:var(--surface); border-radius:8px; padding:12px; font-family:monospace; font-size:13px; border:1px solid var(--surface-border, #f0f0f5); color:var(--text); }
+
+/* smaller connected text and dot */
+.connectedText { font-weight:600; color: var(--success); font-size:13px; }
+.connectedDot { width:8px; height:8px; border-radius:999px; background: var(--success); }
+
+/* small typographic helpers */
+.titleSmall { font-size:16px; font-weight:700; color:var(--text); }
+.subSmall { font-size:12px; color:var(--muted); }
+
+/* recent list item */
+.publicItem { background:var(--surface); border-radius:8px; padding:10px; border:1px solid var(--surface-border, #f0f0f5); margin-bottom:8px; }
+
+/* mantine field wrapper to help keep consistent heights when using Mantine inputs */
+.mantineField { min-height:44px; width:100%; display:block; }
+
+/* small helper to nudge mantine input inner elements for visual parity */
+.mantineField .mantine-Input-input { padding-left: 10px; }
+
+/* responsive */
+@media (max-width:900px) {
+  .columns { flex-direction:column; }
+  .leftCol, .rightCol { min-width:0; flex:1 1 auto; }
+  .qrWrap svg { max-width:180px; }
+}
+
+/* keyboard focus */
+button:focus, input:focus, select:focus { outline: 3px solid var(--primary-strong, rgba(65,63,188,0.12)); outline-offset:2px; }

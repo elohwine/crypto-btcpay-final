@@ -1,0 +1,69 @@
+{
+  "name": "react-crypto-exchange",
+  "version": "0.1.10",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@mantine/core": "^8.3.5",
+    "@mantine/dates": "^8.3.5",
+    "@mantine/hooks": "^8.3.5",
+    "@mantine/notifications": "^8.3.5",
+    "@tabler/icons-react": "^3.35.0",
+    "apexcharts": "^4.7.0",
+    "axios": "^1.4.0",
+    "express": "4.18.2",
+    "lottie-web": "^5.13.0",
+    "qr-code-styling": "^1.9.2",
+    "react": "^19.1.1",
+    "react-apexcharts": "^1.7.0",
+    "react-dom": "^19.1.1",
+    "react-phone-number-input": "^3.4.13",
+    "react-qr-code": "^2.0.18",
+    "react-router-dom": "^7.7.1",
+    "react-scripts": "^5.0.1",
+    "react-sparklines": "^1.7.0",
+    "typescript": "^5.8.3",
+    "dayjs": "^1.11.9"
+  },
+  "scripts": {
+  "start": "DISABLE_ESLINT_PLUGIN=true react-scripts start",
+  "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "eslint": "eslint ./src",
+    "prettier": "prettier --check **",
+    "prettier fix": "prettier --write **"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.4",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "@types/react-sparklines": "^1.7.5",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jsx-a11y": "^6.7.4",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "@typescript-eslint/parser": "^6.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "prettier": "^2.8.8"
+  }
+}

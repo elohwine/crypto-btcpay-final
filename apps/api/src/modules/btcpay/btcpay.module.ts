@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { BtcpayService } from './btcpay.service';
 
-@Module({ providers: [BtcpayService], exports: [BtcpayService] })
+@Module({ imports: [ConfigModule], providers: [BtcpayService], exports: [BtcpayService] })
 export class BtcpayModule {}

@@ -91,3 +91,27 @@ Open:
 - Prisma errors: ensure DB is running and re-run migrate/generate from `@repo/db`.
 - Full Compose build fails on Web: add a Dockerfile to `apps/web` or use Option B.
 
+## Backups & persistence (Postgres / BTCPay)
+
+This project uses Docker Compose and named volumes for Postgres and BTCPay data. To avoid losing store/accounts and invoices, do not remove volumes with `docker compose down -v` unless you want to wipe data.
+
+Scripts are provided in `scripts/`:
+
+- `scripts/backup_db.sh` — create a SQL dump of the Postgres database (created in `./backups`).
+- `scripts/restore_db.sh` — restore a SQL dump into the DB.
+- `scripts/backup_volume.sh backup [archive.tar.gz]` — backup the `btcpay_data` named volume to an archive in `./backups`.
+- `scripts/backup_volume.sh restore [archive.tar.gz]` — restore archive into `btcpay_data` named volume.
+
+Example:
+
+```bash
+# create DB SQL backup
+./scripts/backup_db.sh
+
+# backup BTCPay named volume
+./scripts/backup_volume.sh backup
+```
+
+If you are migrating from an anonymous volume, inspect the container mounts with `docker inspect <container>` and use `docker run --rm -v OLD_VOL:/from -v NEW_VOL:/to alpine sh -c "cd /from && cp -a . /to"` to copy data into a named volume.
+
+

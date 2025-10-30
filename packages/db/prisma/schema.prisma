@@ -18,7 +18,10 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
+  dateOfBirth DateTime?
+  phone     String?
   password  String
+  refreshTokens RefreshToken[]
   deposits  Deposit[]
   ledger    LedgerEntry[]
   createdAt DateTime @default(now())
@@ -30,10 +33,12 @@ model Deposit {
   userId        String
   user          User          @relation(fields: [userId], references: [id])
   invoiceId     String        @unique
+  txHash        String?       @unique
   amount        Float
   currency      String
   status        DepositStatus @default(PENDING)
   btcpayStatus  String?
+  walletAddress String?
   confirmedAt   DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -57,5 +62,15 @@ model WebhookEvent {
   eventType  String
   payload    Json
   processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
   createdAt  DateTime @default(now())
 }
