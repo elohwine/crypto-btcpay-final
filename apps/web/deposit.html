@@ -100,7 +100,7 @@
                     <input name="amount" value="10" type="number" step="0.000001" min="0.000001" required>
                 </div>
                 <div>
-                    <button type="submit" id="create-deposit" disabled>Connect Wallet First</button>
+                    <button type="submit" id="create-deposit">Create USDT Deposit (Manual or Auto)</button>
                 </div>
             </form>
         </div>
@@ -117,6 +117,11 @@
             <div>Deposit ID: <span id="panel-deposit-id" class="address">-</span></div>
             <div>TX: <span id="panel-tx" class="address">-</span> <a id="panel-tx-link" href="#" target="_blank" style="margin-left:8px; color:#8fe">view</a></div>
             <div>Payment link: <a id="panel-payment-link" href="#" target="_blank">open</a></div>
+            <div style="margin-top:8px;">
+                <label for="manual-txhash">Paste your transaction hash (manual confirmation):</label>
+                <input id="manual-txhash" placeholder="e.g. 4e8c..." style="width:100%;" />
+                <button id="report-tx-btn" style="margin-top:6px;">Report Tx to Server</button>
+            </div>
             <div style="margin-top:8px;">
                 <button id="open-invoice-btn">Open Invoice</button>
                 <button id="open-tx-btn" style="margin-left:8px;">Open TX</button>
@@ -141,8 +146,12 @@
 
     <script>
         // State
-        let isWalletConnected = false;
-        let walletAddress = '';
+    let isWalletConnected = false;
+    let walletAddress = '';
+    // Track last created deposit context for manual confirmation flows
+    let lastDepositId = null;
+    let lastRecipient = null;
+    let lastAmount = null;
     // Default deployed test USDT-like TRC20 contract (base58)
     const TOKEN_CONTRACT = 'TQwXRK7EqDitMDhHNnTKPGpT9ZohJUxe3q';
     // Fallback BTCPay TRON recipient (do NOT rely on hardcoded values in production).
@@ -199,8 +208,9 @@
             } else {
                 connectSection.style.display = 'block';
                 connectedSection.style.display = 'none';
-                depositButton.disabled = true;
-                depositButton.textContent = 'Connect Wallet First';
+                // Allow creating a deposit in manual mode (QR/checkout), no wallet required
+                depositButton.disabled = false;
+                depositButton.textContent = 'Create USDT Deposit (Manual)';
             }
         }
 
@@ -282,6 +292,10 @@
                     renderQr(recipient);
                     updateOutput(`ℹ️ Using raw recipient address: ${recipient}`,'info');
                 }
+                // Cache context for manual confirmation/reporting
+                lastDepositId = result.depositId || result.id || null;
+                lastRecipient = recipient || null;
+                lastAmount = depositData.amount || null;
                 document.getElementById('deposit-panel').style.display = 'block';
 
                 renderQr(paymentUrl);
@@ -399,7 +413,7 @@
                 // Start polling only for manual (QR/checkout) flows where the user will send from an external wallet,
                 // or when we didn't have a connected wallet. For auto-send flows, polling is started after the
                 // client reports the on-chain tx to the server (see reporting logic above).
-                if (depositId && !isWalletConnected && paymentUrl) {
+                if (depositId && !isWalletConnected) {
                     // Longer polling window for manual payments
                     console.log(`[Deposit UI] starting poll for manual deposit ${depositId}`);
                     pollDepositStatus(depositId, 300, 10000); // ~50 minutes for manual payments
@@ -439,6 +453,29 @@
             const entry = { depositId: document.getElementById('panel-deposit-id').textContent, invoiceId: document.getElementById('panel-invoice-id').textContent, tx: document.getElementById('panel-tx').textContent, txLink: document.getElementById('panel-tx-link').href, createdAt: new Date().toISOString() };
             saveToHistory(entry);
             updateOutput('💾 Saved deposit to local history', 'info');
+        });
+
+        // Manual tx hash reporting handler
+        document.getElementById('report-tx-btn').addEventListener('click', async ()=>{
+            const txh = (document.getElementById('manual-txhash').value || '').trim();
+            if(!txh){ updateOutput('⚠️ Enter a transaction hash to report', 'info'); return; }
+            if(!lastRecipient){ updateOutput('⚠️ No recipient context; create a deposit first to know where to send', 'info'); return; }
+            try{
+                updateOutput('📬 Reporting transaction to server...', 'info');
+                const r = await fetch((window._API || 'http://localhost:3001') + '/api/deposits/direct', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ txHash: txh, contract: TOKEN_CONTRACT, toAddress: lastRecipient, amount: lastAmount })
+                });
+                const j = await r.json().catch(()=>null);
+                if(r.ok && j && !j.error){
+                    updateOutput('✅ Reported. Starting confirmation polling...', 'success');
+                    const depId = j.depositId || lastDepositId;
+                    if(depId){ document.getElementById('panel-deposit-id').textContent = depId; pollDepositStatus(depId); }
+                    if(j.txHash){ document.getElementById('panel-tx').textContent = j.txHash; const explorer = (window._NETWORK === 'mainnet') ? `https://tronscan.org/#/transaction/${j.txHash}` : `https://shasta.tronscan.org/#/transaction/${j.txHash}`; document.getElementById('panel-tx-link').href = explorer; }
+                } else {
+                    updateOutput(j || { error: 'report failed' }, 'error');
+                }
+            }catch(e){ updateOutput('❌ Report failed: ' + (e?.message || e), 'error'); }
         });
 
         document.getElementById('open-invoice-btn').addEventListener('click', ()=>{ const url = document.getElementById('panel-payment-link').href; if(url && url!=='#') window.open(url, '_blank'); });

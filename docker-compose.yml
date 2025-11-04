@@ -111,6 +111,31 @@ services:
       # Plugin mount with write access so BTCPay can manage plugins
       - ./btcpay-plugins:/root/.btcpayserver/Plugins
 
+  # Combined API + Frontend service (single container)
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file: ./.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      # BTCPay optional - if not set, will use TRON_DEFAULT_RECEIVER fallback
+      BTCPAY_HOST: "${BTCPAY_HOST:-}"
+      BTCPAY_API_KEY: "${BTCPAY_API_KEY:-}"
+      BTCPAY_STORE_ID: "${BTCPAY_STORE_ID:-}"
+      BTCPAY_WEBHOOK_SECRET: "${BTCPAY_WEBHOOK_SECRET:-}"
+      TRON_PROVIDER_URL: ${TRON_PROVIDER_URL}
+      TRON_NETWORK: ${TRON_NETWORK}
+      TRON_USDT_DECIMALS: ${TRON_USDT_DECIMALS}
+      TRON_DEFAULT_RECEIVER: ${TRON_DEFAULT_RECEIVER}
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+    depends_on:
+      - db
+    ports:
+      - "3001:3001"
+
+  # Keep separate api/frontend services for development (optional - comment out when using combined)
   api:
     build:
       context: .
@@ -126,6 +151,8 @@ services:
       - btcpay
     ports:
       - "3001:3001"
+    profiles:
+      - dev-separate
 
   frontend:
     build: ./apps/frontend
@@ -134,6 +161,8 @@ services:
       - api
     ports:
       - "3000:80"
+    profiles:
+      - dev-separate
 
 volumes:
   db_data:

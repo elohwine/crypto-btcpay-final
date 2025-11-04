@@ -6,7 +6,7 @@ import { LedgerService } from '../ledger/ledger.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { randomUUID } from 'crypto';
 
-@Controller('api/deposits')
+@Controller('deposits')
 export class DepositsController {
   constructor(
     @Inject('PRISMA') private prisma: PrismaClient,
@@ -16,7 +16,6 @@ export class DepositsController {
   ){}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   async create(@Body() body: any, @Req() req: any){
     const { currency, amount, userId, walletAddress } = body;
         // Prefer authenticated user id (req.user.sub) if available, fall back to provided userId or seed-user for dev
@@ -48,28 +47,37 @@ export class DepositsController {
     // Generate deposit ID first for orderId
     const depositId = randomUUID();
 
+    // Determine if BTCPay is enabled for this environment. If any critical var is missing
+    // or SKIP_BTCPAY=true, we run in minimal mode and skip BTCPay invoice creation entirely.
+    const btcpayEnabled = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID) && process.env.SKIP_BTCPAY !== 'true';
+
     // If currency is USDT and caller did not provide a destination wallet, try to derive
-    // a store-configured TRON/TRC20 address. This allows the server to operate in
-    // store-driven mode (no client-supplied wallet) when the BTCPay store has an address.
+    // a destination. Prefer environment default in minimal mode; otherwise try store-configured
+    // TRON/TRC20 address. This allows the server to operate in store-driven mode when available.
     const curr = currency || 'USDT';
     let resolvedWalletAddress = walletAddress || null;
     let storePermissionMissing: string | null = null;
     if (curr === 'USDT' && !resolvedWalletAddress) {
-      try {
-        const status = await this.btcpayService.getStoreWalletAddressStatus(curr);
-        if (status) {
-          if (status.address) {
-            resolvedWalletAddress = status.address;
-            console.log(`[Deposits] using store-configured wallet address ${status.address}`);
-          } else if (status.missingPermission) {
-            storePermissionMissing = status.missingPermission;
-            console.warn(`[Deposits] BTCPay API missing permission: ${storePermissionMissing} - ${status.error || ''}`);
-          } else if (status.error) {
-            console.warn('[Deposits] getStoreWalletAddressStatus returned error', status.error);
+      if (!btcpayEnabled && process.env.TRON_DEFAULT_RECEIVER) {
+        resolvedWalletAddress = process.env.TRON_DEFAULT_RECEIVER;
+        console.log(`[Deposits] minimal mode: using TRON_DEFAULT_RECEIVER ${resolvedWalletAddress}`);
+      } else {
+        try {
+          const status = await this.btcpayService.getStoreWalletAddressStatus(curr);
+          if (status) {
+            if (status.address) {
+              resolvedWalletAddress = status.address;
+              console.log(`[Deposits] using store-configured wallet address ${status.address}`);
+            } else if (status.missingPermission) {
+              storePermissionMissing = status.missingPermission;
+              console.warn(`[Deposits] BTCPay API missing permission: ${storePermissionMissing} - ${status.error || ''}`);
+            } else if (status.error) {
+              console.warn('[Deposits] getStoreWalletAddressStatus returned error', status.error);
+            }
           }
+        } catch (e) {
+          console.warn('[Deposits] failed to derive store wallet address', e?.message || e);
         }
-      } catch (e) {
-        console.warn('[Deposits] failed to derive store wallet address', e?.message || e);
       }
     }
     
@@ -84,38 +92,42 @@ export class DepositsController {
     let invoice: any = null;
     let invoiceId: string | null = null;
     let checkout: string | null = null;
-    try {
-      invoice = await this.btcpayService.createInvoice(amount ? Number(amount) : undefined, currency || 'USDT', metadata);
-  console.log(`[Deposits] BTCPay invoice creation result:`, JSON.stringify(invoice, null, 2));
-      invoiceId = invoice?.data?.id || invoice?.id || null;
-      checkout = invoice?.data?.checkoutLink || invoice?.checkoutLink || null;
-      
-      console.log(`[Deposits] Extracted invoiceId: ${invoiceId}, checkout: ${checkout}`);
-      
-      // Check if the created invoice is valid
-      const invoiceStatus = invoice?.data?.status || invoice?.status;
-      console.log(`[Deposits] Invoice status: ${invoiceStatus}`);
-      if (invoiceId && invoiceStatus === 'Invalid') {
-        console.warn(`[Deposits] BTCPay created invalid invoice ${invoiceId}, will use fallback for on-chain payments`);
-        // record the invoice object for debugging to help trace why BTCPay returned Invalid
-        console.warn(`[Deposits][debug] invalid-invoice-payload: ${JSON.stringify(invoice, null, 2)}`);
-        // Only use local-fallback if no env/store recipient is available
-        if (!resolvedWalletAddress) {
-          invoiceId = `local-fallback-${Date.now()}`;
-          checkout = null;
-        } else {
-          // For env/store recipient cases, keep the real invoiceId but mark for no settlement
-          console.log(`[Deposits] Keeping invalid invoiceId ${invoiceId} for env/store recipient case, will skip settlement`);
+    if (btcpayEnabled) {
+      try {
+        invoice = await this.btcpayService.createInvoice(amount ? Number(amount) : undefined, currency || 'USDT', metadata);
+        console.log(`[Deposits] BTCPay invoice creation result:`, JSON.stringify(invoice, null, 2));
+        invoiceId = invoice?.data?.id || invoice?.id || null;
+        checkout = invoice?.data?.checkoutLink || invoice?.checkoutLink || null;
+        
+        console.log(`[Deposits] Extracted invoiceId: ${invoiceId}, checkout: ${checkout}`);
+        
+        // Check if the created invoice is valid
+        const invoiceStatus = invoice?.data?.status || invoice?.status;
+        console.log(`[Deposits] Invoice status: ${invoiceStatus}`);
+        if (invoiceId && invoiceStatus === 'Invalid') {
+          console.warn(`[Deposits] BTCPay created invalid invoice ${invoiceId}, will use fallback for on-chain payments`);
+          console.warn(`[Deposits][debug] invalid-invoice-payload: ${JSON.stringify(invoice, null, 2)}`);
+          // Only use local-fallback if no env/store recipient is available
+          if (!resolvedWalletAddress) {
+            invoiceId = `local-fallback-${Date.now()}`;
+            checkout = null;
+          } else {
+            console.log(`[Deposits] Keeping invalid invoiceId ${invoiceId} for env/store recipient case, will skip settlement`);
+          }
         }
+      } catch (e) {
+        // If invoice creation failed but we have a store-derived or env fallback address, rethrow (don't create deposit)
+        console.warn('[Deposits] BTCPay createInvoice failed', e?.response?.data || e?.message || e);
+        if (resolvedWalletAddress) {
+          // For env/store recipient cases, rethrow to prevent creating deposit without BTCPay invoice
+          throw e;
+        }
+        // mark invoiceId as a placeholder so UI can still use depositId + walletAddress
+        invoiceId = `local-fallback-${Date.now()}`;
+        checkout = null;
       }
-    } catch (e) {
-      // If invoice creation failed but we have a store-derived or env fallback address, rethrow (don't create deposit)
-      console.warn('[Deposits] BTCPay createInvoice failed', e?.response?.data || e?.message || e);
-      if (resolvedWalletAddress) {
-        // For env/store recipient cases, rethrow to prevent creating deposit without BTCPay invoice
-        throw e;
-      }
-      // mark invoiceId as a placeholder so UI can still use depositId + walletAddress
+    } else {
+      // Minimal mode: no BTCPay. Use a local-fallback invoice id so the client can proceed.
       invoiceId = `local-fallback-${Date.now()}`;
       checkout = null;
     }
@@ -130,7 +142,7 @@ export class DepositsController {
     // recipient (safer than trusting caller-provided metadata). If neither is available, leave null
     // so the client shows the QR/manual flow.
     let walletToPersist: string | null = invoiceRecipient || null;
-    if(!walletToPersist){
+    if(!walletToPersist && btcpayEnabled){
       try {
         const status = await this.btcpayService.getStoreWalletAddressStatus(currency || 'USDT');
         if (status && status.address) {

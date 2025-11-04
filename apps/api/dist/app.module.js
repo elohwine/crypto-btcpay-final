@@ -9,6 +9,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const serve_static_1 = require("@nestjs/serve-static");
+const path_1 = require("path");
 const prisma_module_1 = require("./prisma/prisma.module");
 const btcpay_module_1 = require("./modules/btcpay/btcpay.module");
 const auth_module_1 = require("./modules/auth/auth.module");
@@ -27,6 +29,10 @@ exports.AppModule = AppModule = __decorate([
                     '.env',
                     '../../.env',
                 ],
+            }),
+            serve_static_1.ServeStaticModule.forRoot({
+                rootPath: (0, path_1.join)(__dirname, '..', 'public'),
+                exclude: ['/api*'],
             }),
             prisma_module_1.PrismaModule,
             btcpay_module_1.BtcpayModule,

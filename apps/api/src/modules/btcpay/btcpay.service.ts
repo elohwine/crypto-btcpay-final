@@ -56,12 +56,7 @@ export class BtcpayService implements OnModuleInit {
       baseBody.amount = String(amount);
     baseBody.metadata = metadata;
 
-    // First attempt: prefer USDT-TRON (fast path for Tron-only flows).
-    // This enforces the store to create an invoice for the TRON USDT plugin
-    // when available. If the plugin is disabled on the store, BTCPay may
-    // return an error (eg. Invalid PaymentMethodId) — in that case retry
-    // once without forcing the checkout so BTCPay can choose any available
-    // payment method.
+    // First attempt: prefer USDT-TRON (fast path for Tron-only flows)
     const preferredCheckout = { paymentMethods: ['USDT-TRON'], defaultPaymentMethod: 'USDT-TRON' };
 
     try {
@@ -78,15 +73,7 @@ export class BtcpayService implements OnModuleInit {
       console.warn('[BtcpayService] preferred invoice creation failed, will attempt fallback. Detail:', message);
 
       // Known plugin/rate errors that should trigger a fallback attempt
-      const fallbackTriggers = [
-        'Unable to get rate',
-        'Payment method unavailable',
-        'Error retrieving a matching payment method',
-        'Rate rule error',
-        'ERR_TOO_MUCH_NESTED_CALLS',
-        'Invalid PaymentMethodId',
-        'Invalid PaymentMethod'
-      ];
+      const fallbackTriggers = ['Unable to get rate', 'Payment method unavailable', 'Error retrieving a matching payment method', 'Rate rule error', 'ERR_TOO_MUCH_NESTED_CALLS'];
       const shouldFallback = fallbackTriggers.some(t => message.includes(t)) || message.includes('ENOTFOUND') || message.includes('getaddrinfo');
 
       if (!shouldFallback) {

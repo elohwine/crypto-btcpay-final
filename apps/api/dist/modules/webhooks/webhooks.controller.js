@@ -74,7 +74,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WebhooksController.prototype, "handleBtcpay", null);
 exports.WebhooksController = WebhooksController = __decorate([
-    (0, common_1.Controller)('api/webhooks'),
+    (0, common_1.Controller)('webhooks'),
     __param(0, (0, common_1.Inject)('PRISMA')),
     __metadata("design:paramtypes", [client_1.PrismaClient,
         btcpay_service_1.BtcpayService,

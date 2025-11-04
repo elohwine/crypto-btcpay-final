@@ -18,6 +18,8 @@ const client_1 = require("@prisma/client");
 const btcpay_service_1 = require("../btcpay/btcpay.service");
 const tron_service_1 = require("../tron/tron.service");
 const ledger_service_1 = require("../ledger/ledger.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const crypto_1 = require("crypto");
 let DepositsController = class DepositsController {
     constructor(prisma, btcpayService, tronService, ledgerService) {
         this.prisma = prisma;
@@ -46,62 +48,77 @@ let DepositsController = class DepositsController {
             console.error('[Deposits] failed to ensure user exists', err?.message || err);
             throw err;
         }
+        const depositId = (0, crypto_1.randomUUID)();
+        const btcpayEnabled = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID) && process.env.SKIP_BTCPAY !== 'true';
         const curr = currency || 'USDT';
         let resolvedWalletAddress = walletAddress || null;
         let storePermissionMissing = null;
         if (curr === 'USDT' && !resolvedWalletAddress) {
-            try {
-                const status = await this.btcpayService.getStoreWalletAddressStatus(curr);
-                if (status) {
-                    if (status.address) {
-                        resolvedWalletAddress = status.address;
-                        console.log(`[Deposits] using store-configured wallet address ${status.address}`);
-                    }
-                    else if (status.missingPermission) {
-                        storePermissionMissing = status.missingPermission;
-                        console.warn(`[Deposits] BTCPay API missing permission: ${storePermissionMissing} - ${status.error || ''}`);
-                    }
-                    else if (status.error) {
-                        console.warn('[Deposits] getStoreWalletAddressStatus returned error', status.error);
+            if (!btcpayEnabled && process.env.TRON_DEFAULT_RECEIVER) {
+                resolvedWalletAddress = process.env.TRON_DEFAULT_RECEIVER;
+                console.log(`[Deposits] minimal mode: using TRON_DEFAULT_RECEIVER ${resolvedWalletAddress}`);
+            }
+            else {
+                try {
+                    const status = await this.btcpayService.getStoreWalletAddressStatus(curr);
+                    if (status) {
+                        if (status.address) {
+                            resolvedWalletAddress = status.address;
+                            console.log(`[Deposits] using store-configured wallet address ${status.address}`);
+                        }
+                        else if (status.missingPermission) {
+                            storePermissionMissing = status.missingPermission;
+                            console.warn(`[Deposits] BTCPay API missing permission: ${storePermissionMissing} - ${status.error || ''}`);
+                        }
+                        else if (status.error) {
+                            console.warn('[Deposits] getStoreWalletAddressStatus returned error', status.error);
+                        }
                     }
                 }
-            }
-            catch (e) {
-                console.warn('[Deposits] failed to derive store wallet address', e?.message || e);
+                catch (e) {
+                    console.warn('[Deposits] failed to derive store wallet address', e?.message || e);
+                }
             }
         }
         const metadata = {
             userId: user,
-            customerWallet: resolvedWalletAddress || null
+            customerWallet: resolvedWalletAddress || null,
+            orderId: depositId
         };
         let invoice = null;
         let invoiceId = null;
         let checkout = null;
-        try {
-            invoice = await this.btcpayService.createInvoice(amount ? Number(amount) : undefined, currency || 'USDT', metadata);
-            console.log(`[Deposits] BTCPay invoice creation result:`, JSON.stringify(invoice, null, 2));
-            invoiceId = invoice?.data?.id || invoice?.id || null;
-            checkout = invoice?.data?.checkoutLink || invoice?.checkoutLink || null;
-            console.log(`[Deposits] Extracted invoiceId: ${invoiceId}, checkout: ${checkout}`);
-            const invoiceStatus = invoice?.data?.status || invoice?.status;
-            console.log(`[Deposits] Invoice status: ${invoiceStatus}`);
-            if (invoiceId && invoiceStatus === 'Invalid') {
-                console.warn(`[Deposits] BTCPay created invalid invoice ${invoiceId}, will use fallback for on-chain payments`);
-                console.warn(`[Deposits][debug] invalid-invoice-payload: ${JSON.stringify(invoice, null, 2)}`);
-                if (!resolvedWalletAddress) {
-                    invoiceId = `local-fallback-${Date.now()}`;
-                    checkout = null;
+        if (btcpayEnabled) {
+            try {
+                invoice = await this.btcpayService.createInvoice(amount ? Number(amount) : undefined, currency || 'USDT', metadata);
+                console.log(`[Deposits] BTCPay invoice creation result:`, JSON.stringify(invoice, null, 2));
+                invoiceId = invoice?.data?.id || invoice?.id || null;
+                checkout = invoice?.data?.checkoutLink || invoice?.checkoutLink || null;
+                console.log(`[Deposits] Extracted invoiceId: ${invoiceId}, checkout: ${checkout}`);
+                const invoiceStatus = invoice?.data?.status || invoice?.status;
+                console.log(`[Deposits] Invoice status: ${invoiceStatus}`);
+                if (invoiceId && invoiceStatus === 'Invalid') {
+                    console.warn(`[Deposits] BTCPay created invalid invoice ${invoiceId}, will use fallback for on-chain payments`);
+                    console.warn(`[Deposits][debug] invalid-invoice-payload: ${JSON.stringify(invoice, null, 2)}`);
+                    if (!resolvedWalletAddress) {
+                        invoiceId = `local-fallback-${Date.now()}`;
+                        checkout = null;
+                    }
+                    else {
+                        console.log(`[Deposits] Keeping invalid invoiceId ${invoiceId} for env/store recipient case, will skip settlement`);
+                    }
                 }
-                else {
-                    console.log(`[Deposits] Keeping invalid invoiceId ${invoiceId} for env/store recipient case, will skip settlement`);
+            }
+            catch (e) {
+                console.warn('[Deposits] BTCPay createInvoice failed', e?.response?.data || e?.message || e);
+                if (resolvedWalletAddress) {
+                    throw e;
                 }
+                invoiceId = `local-fallback-${Date.now()}`;
+                checkout = null;
             }
         }
-        catch (e) {
-            console.warn('[Deposits] BTCPay createInvoice failed', e?.response?.data || e?.message || e);
-            if (resolvedWalletAddress) {
-                throw e;
-            }
+        else {
             invoiceId = `local-fallback-${Date.now()}`;
             checkout = null;
         }
@@ -113,7 +130,7 @@ let DepositsController = class DepositsController {
             invoiceRecipient = null;
         }
         let walletToPersist = invoiceRecipient || null;
-        if (!walletToPersist) {
+        if (!walletToPersist && btcpayEnabled) {
             try {
                 const status = await this.btcpayService.getStoreWalletAddressStatus(currency || 'USDT');
                 if (status && status.address) {
@@ -141,6 +158,7 @@ let DepositsController = class DepositsController {
         console.log(`[Deposits] create -> user=${user} amount=${amount} currency=${currency} invoiceId=${invoiceId} walletRequested=${walletAddress} walletResolved=${resolvedWalletAddress} storePermissionMissing=${storePermissionMissing}`);
         const dep = await this.prisma.deposit.create({
             data: {
+                id: depositId,
                 userId: user,
                 invoiceId,
                 amount: amount ? Number(amount) : 0.0,
@@ -345,6 +363,12 @@ let DepositsController = class DepositsController {
         const rows = await this.prisma.deposit.findMany({ take: 100, orderBy: { createdAt: 'desc' }, select: { id: true, invoiceId: true, amount: true, currency: true, status: true, createdAt: true, txHash: true } });
         return rows.map(r => ({ depositId: r.id, invoiceId: r.invoiceId, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash }));
     }
+    async myDeposits(req) {
+        const authUserId = req?.user?.sub;
+        const user = authUserId || 'seed-user';
+        const rows = await this.prisma.deposit.findMany({ where: { userId: user }, orderBy: { createdAt: 'desc' }, select: { id: true, amount: true, currency: true, status: true, createdAt: true, txHash: true, invoiceId: true, walletAddress: true } });
+        return rows.map(r => ({ depositId: r.id, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash, invoiceId: r.invoiceId, walletAddress: r.walletAddress }));
+    }
     async getStoreTronAddress(storeId) {
         try {
             const status = await this.btcpayService.getStoreWalletAddressStatus('USDT', storeId);
@@ -467,6 +491,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "publicList", null);
 __decorate([
+    (0, common_1.Get)('me'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DepositsController.prototype, "myDeposits", null);
+__decorate([
     (0, common_1.Get)('store/:storeId/tron-address'),
     __param(0, (0, common_1.Param)('storeId')),
     __metadata("design:type", Function),
@@ -486,7 +518,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "reconcileLocalFallbacks", null);
 exports.DepositsController = DepositsController = __decorate([
-    (0, common_1.Controller)('api/deposits'),
+    (0, common_1.Controller)('deposits'),
     __param(0, (0, common_1.Inject)('PRISMA')),
     __metadata("design:paramtypes", [client_1.PrismaClient,
         btcpay_service_1.BtcpayService,

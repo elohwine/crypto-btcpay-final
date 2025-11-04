@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { BtcpayService } from '../btcpay/btcpay.service';
 import { LedgerService } from '../ledger/ledger.service';
 
-@Controller('api/webhooks')
+@Controller('webhooks')
 export class WebhooksController {
   constructor(
     @Inject('PRISMA') private prisma: PrismaClient,
