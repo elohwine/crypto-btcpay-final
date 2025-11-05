@@ -48,6 +48,8 @@ const BankProcess: React.FC = () => {
   const [selectedNetwork, setSelectedNetwork] = useState<string>("TRC20");
   const [invoiceModalOpen, setInvoiceModalOpen] = useState<boolean>(false);
   const [storeTronAddress, setStoreTronAddress] = useState<string | null>(null);
+  const [manualTxHash, setManualTxHash] = useState<string>("");
+  const [lastRequestedAmount, setLastRequestedAmount] = useState<number | null>(null);
   const [lottieModalOpen, setLottieModalOpen] = useState<boolean>(false);
   const [lottieType, setLottieType] = useState<"success" | "failed" | null>(
     null
@@ -373,6 +375,7 @@ const BankProcess: React.FC = () => {
       walletAddress: walletConnected ? walletAddress : undefined,
       network: selectedNetwork,
     };
+    setLastRequestedAmount(amount);
 
     if (!walletConnected)
       setOutput(
@@ -544,7 +547,6 @@ const BankProcess: React.FC = () => {
               style={{
                 borderRadius: 12,
                 padding: 8,
-                background: hexToRgba(primary, 0.06),
                 pointerEvents: "none",
               }}
             >
@@ -562,7 +564,6 @@ const BankProcess: React.FC = () => {
               style={{
                 borderRadius: 12,
                 padding: 8,
-                background: hexToRgba(primary, 0.06),
                 pointerEvents: "none",
               }}
             >
@@ -1338,6 +1339,54 @@ const BankProcess: React.FC = () => {
               >
                 <IconCopy size={14} />
                 <span style={{ marginLeft: 8 }}>Copy Address</span>
+              </Button>
+            </div>
+
+            {/* Manual tx hash reporting (for external wallet/manual payments) */}
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <TextInput
+                placeholder="Paste transaction hash (TRON)"
+                value={manualTxHash}
+                onChange={(e) => setManualTxHash(e.currentTarget.value)}
+                styles={{ input: { height: 40, fontSize: 14 } }}
+                style={{ minWidth: 260, flex: 1 }}
+              />
+              <Button
+                variant="default"
+                onClick={async () => {
+                  const txh = (manualTxHash || "").trim();
+                  if (!txh) {
+                    notify.error("Enter a transaction hash");
+                    return;
+                  }
+                  // Recipient is optional for reporting: server will infer from chain tx
+                  const recipient =
+                    depositResult?.walletAddress || storeTronAddress || undefined;
+                  const amt =
+                    lastRequestedAmount != null
+                      ? lastRequestedAmount
+                      : (depositResult as any)?.amount || null;
+                  try {
+                    setOutput(
+                      `📬 Reporting ${txh} to server and starting confirmation polling...`
+                    );
+                    await reportTxAndStartPoll(txh, recipient as any, amt as any);
+                  } catch (e: any) {
+                    setOutput(
+                      `❌ Report failed: ${e?.message || String(e)}`
+                    );
+                  }
+                }}
+              >
+                Report Tx
               </Button>
             </div>
           </div>

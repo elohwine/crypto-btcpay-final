@@ -1,0 +1,18 @@
+# Global dockerignore to keep context small and avoid copying host node_modules
+node_modules
+**/node_modules
+
+# Ignore local builds and caches
+**/build
+**/.turbo
+**/.next
+**/dist
+
+# VCS and editor junk
+.git
+.gitignore
+.vscode
+.DS_Store
+npm-debug.log*
+yarn-error.log
+pnpm-debug.log

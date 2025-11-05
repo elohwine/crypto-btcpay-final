@@ -5,11 +5,12 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class BtcpayService implements OnModuleInit {
-  // Default to localhost for smoother local dev; override via BTCPAY_HOST in Docker
-  private host = 'http://localhost:49392';
+  // Do NOT default to localhost; only enable when explicitly configured
+  private host = '';
   private apiKey = '';
   private storeId = '';
   private webhookSecret = '';
+  private enabled = false;
 
   private client = axios.create();
 
@@ -23,19 +24,40 @@ export class BtcpayService implements OnModuleInit {
 
   private reloadClientFromEnv() {
     // Use ConfigService when available; fall back to process.env
-    this.host = this.configService.get<string>('BTCPAY_HOST') || process.env.BTCPAY_HOST || this.host;
-    this.apiKey = this.configService.get<string>('BTCPAY_API_KEY') || process.env.BTCPAY_API_KEY || this.apiKey;
-    this.storeId = this.configService.get<string>('BTCPAY_STORE_ID') || process.env.BTCPAY_STORE_ID || this.storeId;
-    this.webhookSecret = this.configService.get<string>('BTCPAY_WEBHOOK_SECRET') || process.env.BTCPAY_WEBHOOK_SECRET || this.webhookSecret;
+    const envHost = this.configService.get<string>('BTCPAY_HOST') || process.env.BTCPAY_HOST || '';
+    const envKey = this.configService.get<string>('BTCPAY_API_KEY') || process.env.BTCPAY_API_KEY || '';
+    const envStore = this.configService.get<string>('BTCPAY_STORE_ID') || process.env.BTCPAY_STORE_ID || '';
+    this.webhookSecret = this.configService.get<string>('BTCPAY_WEBHOOK_SECRET') || process.env.BTCPAY_WEBHOOK_SECRET || '';
+
+    // Enable rules:
+    // - If BTCPAY_ENABLED is explicitly 'true' => enabled
+    // - If BTCPAY_ENABLED is 'false' => disabled
+    // - Else: enabled only if host+key+store present AND SKIP_BTCPAY !== 'true'
+    const explicit = (this.configService.get<string>('BTCPAY_ENABLED') || process.env.BTCPAY_ENABLED || '').toLowerCase();
+    const skip = (this.configService.get<string>('SKIP_BTCPAY') || process.env.SKIP_BTCPAY || '').toLowerCase() === 'true';
+    const hasCreds = !!(envHost && envKey && envStore);
+    if (explicit === 'true') this.enabled = true;
+    else if (explicit === 'false') this.enabled = false;
+    else this.enabled = hasCreds && !skip;
+
+    this.host = envHost;
+    this.apiKey = envKey;
+    this.storeId = envStore;
+
     // small masked debug log to confirm runtime env values (safe for logs)
     try {
       const masked = this.apiKey ? `${this.apiKey.slice(0,6)}...${this.apiKey.slice(-4)}` : '<missing>';
-      console.log(`[BtcpayService] init host=${this.host} apiKey=${masked} storeId=${this.storeId ? this.storeId : '<missing>'}`);
+      console.log(`[BtcpayService] ${this.enabled ? 'enabled' : 'disabled'} host=${this.host || '<none>'} apiKey=${masked} storeId=${this.storeId ? this.storeId : '<missing>'}`);
     } catch (e) { /* ignore logging errors */ }
-    this.client = axios.create({ baseURL: this.host + '/api/v1', timeout: 30000, headers: { Authorization: `token ${this.apiKey}` } });
+    this.client = axios.create({ baseURL: (this.host ? this.host + '/api/v1' : ''), timeout: 30000, headers: { Authorization: `token ${this.apiKey}` } });
   }
 
+  isEnabled(){ return this.enabled; }
+
   private async getStoreId(): Promise<string> {
+    if (!this.enabled) {
+      throw new HttpException('BTCPay disabled', HttpStatus.BAD_REQUEST);
+    }
     if (this.storeId) return this.storeId;
     try {
       const res = await this.client.get('/stores');
@@ -50,6 +72,9 @@ export class BtcpayService implements OnModuleInit {
   }
 
   async createInvoice(amount?: number, currency = 'USDT', metadata: any = {}){
+    if (!this.enabled) {
+      throw new HttpException('BTCPay disabled', HttpStatus.BAD_REQUEST);
+    }
     const sid = await this.getStoreId();
     const baseBody: any = { currency };
     if (amount != null)
@@ -108,6 +133,9 @@ export class BtcpayService implements OnModuleInit {
    * { address?: string|null, source?: 'store'|'env', missingPermission?: string, error?: string }
    */
   async getStoreWalletAddressStatus(currency = 'USDT', storeId?: string){
+    if (!this.enabled) {
+      return { address: null, error: 'BTCPay disabled' } as any;
+    }
     const sid = storeId || await this.getStoreId();
     try {
       // Log request headers for debugging
@@ -173,6 +201,9 @@ export class BtcpayService implements OnModuleInit {
   }
 
   async settleInvoice(invoiceId: string, status = 'Settled', force = false){
+    if (!this.enabled) {
+      return { error: 'BTCPay disabled' } as any;
+    }
     const sid = await this.getStoreId();
     try {
       // First check current invoice status
@@ -219,6 +250,7 @@ export class BtcpayService implements OnModuleInit {
 
   // Fetch a single invoice by id. Returns invoice object or null if not found.
   async getInvoice(invoiceId: string){
+    if (!this.enabled) return null;
     const sid = await this.getStoreId();
     try {
       const res = await this.client.get(`/stores/${sid}/invoices/${invoiceId}`);

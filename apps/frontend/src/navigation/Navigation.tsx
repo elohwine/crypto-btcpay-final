@@ -11,6 +11,7 @@ import CapitalScreen from "../screens/Capital/CapitalScreen";
 import NotFoundScreen from "../screens/NotFound/NotFoundScreen";
 import DashboardScreen from "../screens/Dashboard/DashboardScreen";
 import TransactionsScreen from "../screens/Transactions/TransactionsScreen";
+import AdminScreen from "../screens/Admin/AdminScreen";
 import { DemoNotifications } from "../components/DemoNotifications";
 import ProtectedRoute from "../components/Common/ProtectedRoute";
 
@@ -59,6 +60,14 @@ const Navigation: React.FC = () => (
       element={
         <ProtectedRoute>
           <DemoNotifications />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin"
+      element={
+        <ProtectedRoute>
+          <AdminScreen />
         </ProtectedRoute>
       }
     />

@@ -61,6 +61,9 @@ const Navbar: React.FC = () => {
           />
         </li>
         <li>
+          <NavbarButton url="/admin" icon="admin_panel_settings" title="Admin" />
+        </li>
+        <li>
           <NavbarButton url="/contacts" icon="contacts" title="Addresses" />
         </li>
         <li>

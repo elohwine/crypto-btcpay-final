@@ -47,9 +47,15 @@ export class DepositsController {
     // Generate deposit ID first for orderId
     const depositId = randomUUID();
 
-    // Determine if BTCPay is enabled for this environment. If any critical var is missing
-    // or SKIP_BTCPAY=true, we run in minimal mode and skip BTCPay invoice creation entirely.
-    const btcpayEnabled = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID) && process.env.SKIP_BTCPAY !== 'true';
+  // Determine if BTCPay is enabled for this environment.
+  // Rules:
+  //  - If BTCPAY_ENABLED='true' -> enabled
+  //  - If BTCPAY_ENABLED='false' -> disabled
+  //  - Else: enabled only when creds present AND SKIP_BTCPAY !== 'true'
+  const explicit = (process.env.BTCPAY_ENABLED || '').toLowerCase();
+  const hasCreds = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID);
+  const skip = (process.env.SKIP_BTCPAY || '').toLowerCase() === 'true';
+  const btcpayEnabled = explicit === 'true' ? true : explicit === 'false' ? false : (hasCreds && !skip);
 
     // If currency is USDT and caller did not provide a destination wallet, try to derive
     // a destination. Prefer environment default in minimal mode; otherwise try store-configured
@@ -61,7 +67,7 @@ export class DepositsController {
       if (!btcpayEnabled && process.env.TRON_DEFAULT_RECEIVER) {
         resolvedWalletAddress = process.env.TRON_DEFAULT_RECEIVER;
         console.log(`[Deposits] minimal mode: using TRON_DEFAULT_RECEIVER ${resolvedWalletAddress}`);
-      } else {
+      } else if (btcpayEnabled) {
         try {
           const status = await this.btcpayService.getStoreWalletAddressStatus(curr);
           if (status) {
@@ -402,21 +408,8 @@ export class DepositsController {
     return rows.map(r => ({ depositId: r.id, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash, invoiceId: r.invoiceId, walletAddress: r.walletAddress }));
   }
 
-  @Get('store/:storeId/tron-address')
-  async getStoreTronAddress(@Param('storeId') storeId: string){
-    try {
-      const status = await this.btcpayService.getStoreWalletAddressStatus('USDT', storeId);
-      if (status) {
-        if (status.address) return { ok: true, address: status.address, source: status.source || 'store', network: status.address.startsWith('T') ? 'tron' : 'unknown' };
-        if (status.missingPermission) return { ok: false, missingPermission: status.missingPermission, error: status.error || 'missing permission' };
-      }
-      return { ok: false, message: 'No Tron/TRC20 address configured for this store' };
-    } catch (e) {
-      console.error('[Deposits] getStoreTronAddress failed', e?.message || e);
-      return { ok: false, message: 'Failed to fetch store address' };
-    }
-  }
-
+  // Prefer the concrete route before the param route so 
+  // /store/current/tron-address is not captured by :storeId
   @Get('store/current/tron-address')
   async getCurrentStoreTronAddress(){
     try {
@@ -433,6 +426,25 @@ export class DepositsController {
       return { ok: false, message: 'No Tron/TRC20 address configured for current store' };
     } catch (e) {
       console.error('[Deposits] getCurrentStoreTronAddress failed', e?.message || e);
+      return { ok: false, message: 'Failed to fetch store address' };
+    }
+  }
+
+  @Get('store/:storeId/tron-address')
+  async getStoreTronAddress(@Param('storeId') storeId: string){
+    // route guard: if client calls /store/current/tron-address, delegate to the explicit handler
+    if (storeId === 'current') return this.getCurrentStoreTronAddress();
+    try {
+      const status = await this.btcpayService.getStoreWalletAddressStatus('USDT', storeId);
+      if (status) {
+        if (status.address) return { ok: true, address: status.address, source: status.source || 'store', network: status.address.startsWith('T') ? 'tron' : 'unknown' };
+        if (status.missingPermission) return { ok: false, missingPermission: status.missingPermission, error: status.error || 'missing permission' };
+      }
+      // If BTCPay not available or no address configured for this store, return env fallback when present
+      if (process.env.TRON_DEFAULT_RECEIVER) return { ok: true, address: process.env.TRON_DEFAULT_RECEIVER, source: 'env', network: process.env.TRON_DEFAULT_RECEIVER.startsWith('T') ? 'tron' : 'unknown' };
+      return { ok: false, message: 'No Tron/TRC20 address configured for this store' };
+    } catch (e) {
+      console.error('[Deposits] getStoreTronAddress failed', e?.message || e);
       return { ok: false, message: 'Failed to fetch store address' };
     }
   }

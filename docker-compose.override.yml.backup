@@ -1,0 +1,42 @@
+# ============================================================================
+# docker-compose.override.yml.example
+# ============================================================================
+# Copy this file to docker-compose.override.yml for local development with
+# a dockerized Postgres instance. Docker Compose automatically merges override
+# files, so the db service will be available without editing docker-compose.yml.
+#
+# Usage:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   docker compose up -d
+#
+# This override re-enables the local Postgres service and volume for developers
+# who want to run the full stack locally without using Render managed Postgres.
+# ============================================================================
+
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cryptoplatform
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./packages/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cryptoplatform || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Re-add db dependency for app service when using local Postgres
+  app:
+    depends_on:
+      - db
+
+volumes:
+  db_data:

@@ -6,7 +6,7 @@ import { notify } from "../ui/notifications/notify";
 // falling back to localhost for local dev. Keep the `/api` prefix so calls like
 // `/deposits` map to Nest controller routes declared under `@Controller('api/deposits')`.
 const resolvedApiHost = (
-  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof process !== "undefined" && process.env && process.env.NEXT_PUBLIC_API_URL) ||
   (typeof window !== "undefined" && (window as any)._API) ||
   "http://localhost:3001"
 ).replace(/\/$/, "");

@@ -49,7 +49,10 @@ let DepositsController = class DepositsController {
             throw err;
         }
         const depositId = (0, crypto_1.randomUUID)();
-        const btcpayEnabled = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID) && process.env.SKIP_BTCPAY !== 'true';
+        const explicit = (process.env.BTCPAY_ENABLED || '').toLowerCase();
+        const hasCreds = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID);
+        const skip = (process.env.SKIP_BTCPAY || '').toLowerCase() === 'true';
+        const btcpayEnabled = explicit === 'true' ? true : explicit === 'false' ? false : (hasCreds && !skip);
         const curr = currency || 'USDT';
         let resolvedWalletAddress = walletAddress || null;
         let storePermissionMissing = null;
@@ -58,7 +61,7 @@ let DepositsController = class DepositsController {
                 resolvedWalletAddress = process.env.TRON_DEFAULT_RECEIVER;
                 console.log(`[Deposits] minimal mode: using TRON_DEFAULT_RECEIVER ${resolvedWalletAddress}`);
             }
-            else {
+            else if (btcpayEnabled) {
                 try {
                     const status = await this.btcpayService.getStoreWalletAddressStatus(curr);
                     if (status) {
@@ -369,22 +372,6 @@ let DepositsController = class DepositsController {
         const rows = await this.prisma.deposit.findMany({ where: { userId: user }, orderBy: { createdAt: 'desc' }, select: { id: true, amount: true, currency: true, status: true, createdAt: true, txHash: true, invoiceId: true, walletAddress: true } });
         return rows.map(r => ({ depositId: r.id, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash, invoiceId: r.invoiceId, walletAddress: r.walletAddress }));
     }
-    async getStoreTronAddress(storeId) {
-        try {
-            const status = await this.btcpayService.getStoreWalletAddressStatus('USDT', storeId);
-            if (status) {
-                if (status.address)
-                    return { ok: true, address: status.address, source: status.source || 'store', network: status.address.startsWith('T') ? 'tron' : 'unknown' };
-                if (status.missingPermission)
-                    return { ok: false, missingPermission: status.missingPermission, error: status.error || 'missing permission' };
-            }
-            return { ok: false, message: 'No Tron/TRC20 address configured for this store' };
-        }
-        catch (e) {
-            console.error('[Deposits] getStoreTronAddress failed', e?.message || e);
-            return { ok: false, message: 'Failed to fetch store address' };
-        }
-    }
     async getCurrentStoreTronAddress() {
         try {
             const status = await this.btcpayService.getStoreWalletAddressStatus('USDT');
@@ -403,6 +390,26 @@ let DepositsController = class DepositsController {
         }
         catch (e) {
             console.error('[Deposits] getCurrentStoreTronAddress failed', e?.message || e);
+            return { ok: false, message: 'Failed to fetch store address' };
+        }
+    }
+    async getStoreTronAddress(storeId) {
+        if (storeId === 'current')
+            return this.getCurrentStoreTronAddress();
+        try {
+            const status = await this.btcpayService.getStoreWalletAddressStatus('USDT', storeId);
+            if (status) {
+                if (status.address)
+                    return { ok: true, address: status.address, source: status.source || 'store', network: status.address.startsWith('T') ? 'tron' : 'unknown' };
+                if (status.missingPermission)
+                    return { ok: false, missingPermission: status.missingPermission, error: status.error || 'missing permission' };
+            }
+            if (process.env.TRON_DEFAULT_RECEIVER)
+                return { ok: true, address: process.env.TRON_DEFAULT_RECEIVER, source: 'env', network: process.env.TRON_DEFAULT_RECEIVER.startsWith('T') ? 'tron' : 'unknown' };
+            return { ok: false, message: 'No Tron/TRC20 address configured for this store' };
+        }
+        catch (e) {
+            console.error('[Deposits] getStoreTronAddress failed', e?.message || e);
             return { ok: false, message: 'Failed to fetch store address' };
         }
     }
@@ -499,18 +506,18 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "myDeposits", null);
 __decorate([
+    (0, common_1.Get)('store/current/tron-address'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], DepositsController.prototype, "getCurrentStoreTronAddress", null);
+__decorate([
     (0, common_1.Get)('store/:storeId/tron-address'),
     __param(0, (0, common_1.Param)('storeId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "getStoreTronAddress", null);
-__decorate([
-    (0, common_1.Get)('store/current/tron-address'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], DepositsController.prototype, "getCurrentStoreTronAddress", null);
 __decorate([
     (0, common_1.Get)('reconcile/local-fallbacks'),
     __metadata("design:type", Function),
