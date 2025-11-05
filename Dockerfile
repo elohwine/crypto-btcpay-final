@@ -64,9 +64,10 @@ COPY --from=api-builder /app/apps/api/dist ./apps/api/dist
 # Copy Prisma schema for migrations
 COPY packages/db/prisma ./packages/db/prisma
 
-# Copy frontend build into API's public/ folder (ServeStaticModule expects ../public from dist)
-RUN mkdir -p ./apps/api/public
-COPY --from=frontend-builder /app/frontend/build ./apps/api/public
+	# Copy frontend build into API's public/ folder (ServeStaticModule expects ../public from dist)
+	RUN mkdir -p ./apps/api/public
+	# frontend build output is at /app/apps/frontend/build when using workspace layout
+	COPY --from=frontend-builder /app/apps/frontend/build ./apps/api/public
 
 # Expose port (Render will set PORT env)
 EXPOSE 3001
