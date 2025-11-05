@@ -2,10 +2,14 @@ import axios from "axios";
 import { loader } from "../ui/loading/loaderContext";
 import { notify } from "../ui/notifications/notify";
 
-// Resolve base API URL from (build-time) NEXT_PUBLIC_API_URL, or runtime window._API,
-// falling back to localhost for local dev. Keep the `/api` prefix so calls like
-// `/deposits` map to Nest controller routes declared under `@Controller('api/deposits')`.
+// Resolve base API URL with strong preference for same-origin to avoid CORS in production.
+// Order of precedence (browser):
+// 1) window.location.origin (same-origin when served by the API server)
+// 2) build-time NEXT_PUBLIC_API_URL
+// 3) window._API (runtime override)
+// 4) http://localhost:3001 (dev fallback)
 const resolvedApiHost = (
+  (typeof window !== "undefined" && window.location && window.location.origin) ||
   (typeof process !== "undefined" && process.env && process.env.NEXT_PUBLIC_API_URL) ||
   (typeof window !== "undefined" && (window as any)._API) ||
   "http://localhost:3001"
