@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { DepositsModule } from './modules/deposits/deposits.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     }),
     // Serve frontend static files from public/ folder (exclude /api routes)
     ServeStaticModule.forRoot({
+      // In dist, __dirname resolves to apps/api/dist; go up one dir to apps/api/public
       rootPath: join(__dirname, '..', 'public'),
       exclude: ['/api*'],
     }),
@@ -29,6 +32,8 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     LedgerModule,
     DepositsModule,
     WebhooksModule,
+    AdminModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

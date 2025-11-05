@@ -1,22 +1,29 @@
 version: "3.8"
 
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: cryptoplatform
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./packages/db/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d cryptoplatform || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+  # ============================================================================
+  # LOCAL DEV POSTGRES (commented out for Render deployment)
+  # ============================================================================
+  # For production/Render: Use managed Postgres and set DATABASE_URL in env.
+  # For local dev: Uncomment this service OR use docker-compose.override.yml
+  # to start a local Postgres container.
+  # ============================================================================
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: cryptoplatform
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #     - ./packages/db/init:/docker-entrypoint-initdb.d:ro
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres -d cryptoplatform || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
 
   # Redis kept for reference but not required for USDt-only setup (profiles: [optional])
   redis:
@@ -102,9 +109,10 @@ services:
       BTCPAY_CHAINS: ""
     ports:
       - "49392:49392"
-    depends_on:
-      - db
-      # Removed nbxplorer dependency - BTCPay can run with USDt plugin without it
+    # depends_on db commented out - BTCPay uses external/Render managed Postgres
+    # depends_on:
+    #   - db
+    # Removed nbxplorer dependency - BTCPay can run with USDt plugin without it
     restart: unless-stopped
     volumes:
       - btcpay_data:/data
@@ -130,10 +138,13 @@ services:
       TRON_DEFAULT_RECEIVER: ${TRON_DEFAULT_RECEIVER}
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
-    depends_on:
-      - db
+    # depends_on db commented out - app uses external/Render managed Postgres
+    # depends_on:
+    #   - db
     ports:
       - "3001:3001"
+      # Also expose on 3000 so http://localhost:3000 works with the combined service
+      - "3000:3001"
 
   # Keep separate api/frontend services for development (optional - comment out when using combined)
   api:
@@ -165,7 +176,8 @@ services:
       - dev-separate
 
 volumes:
-  db_data:
+  # db_data volume commented out - uncomment if using local Postgres
+  # db_data:
   nbxplorer_data:
   bitcoind_data:
   btcpay_data:

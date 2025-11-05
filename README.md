@@ -114,4 +114,229 @@ Example:
 
 If you are migrating from an anonymous volume, inspect the container mounts with `docker inspect <container>` and use `docker run --rm -v OLD_VOL:/from -v NEW_VOL:/to alpine sh -c "cd /from && cp -a . /to"` to copy data into a named volume.
 
+---
 
+## Deploying to Render
+
+This project is configured to deploy to Render with a managed Postgres database. The main `docker-compose.yml` has the local Postgres service commented out for production deployment.
+
+### Prerequisites
+
+- Render account ([render.com](https://render.com))
+- Git repository (GitHub, GitLab, or Bitbucket)
+
+### Step 1: Create Render Managed Postgres
+
+1. Log in to your Render dashboard
+2. Click **New +** → **PostgreSQL**
+3. Configure your database:
+   - **Name**: `cryptoplatform-db` (or your preferred name)
+   - **Database**: `cryptoplatform`
+   - **User**: Will be auto-generated (e.g., `cryptoplatform_user`)
+   - **Region**: Choose closest to your web service
+   - **Plan**: Choose based on your needs (Free tier available for testing)
+4. Click **Create Database**
+5. Wait for the database to provision (usually 1-2 minutes)
+6. Once ready, copy the **External Database URL** from the dashboard
+   - It will look like: `postgresql://USER:PASSWORD@HOST:5432/cryptoplatform`
+
+### Step 2: Create Web Service
+
+1. In Render dashboard, click **New +** → **Web Service**
+2. Connect your Git repository
+3. Configure the service:
+   - **Name**: `cryptoplatform` (or your preferred name)
+   - **Region**: Same as your database
+   - **Branch**: `main` (or your deployment branch)
+   - **Runtime**: `Docker`
+   - **Instance Type**: Choose based on needs (Starter or higher recommended)
+
+### Step 3: Configure Environment Variables
+
+In your Render web service settings, add these environment variables:
+
+**Required:**
+```bash
+# Database (use the External Database URL from Step 1, add sslmode=require)
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/cryptoplatform?sslmode=require
+
+# API Configuration
+API_PORT=3001
+JWT_SECRET=your_strong_random_secret_here
+FRONTEND_ORIGIN=https://your-app-name.onrender.com
+
+# TRON Configuration
+TRON_DEFAULT_RECEIVER=TQK3DrqthcDJNdMZGmBXDLMznGqa72pcLG
+TRON_NETWORK=shasta
+TRON_PROVIDER_URL=https://api.shasta.trongrid.io
+TRON_USDT_DECIMALS=6
+```
+
+**Optional (BTCPay Server):**
+```bash
+BTCPAY_ENABLED=true
+BTCPAY_HOST=https://your-btcpay-server.com
+BTCPAY_API_KEY=your_api_key
+BTCPAY_STORE_ID=your_store_id
+BTCPAY_WEBHOOK_SECRET=your_webhook_secret
+```
+
+### Step 4: Deploy
+
+1. Click **Create Web Service**
+2. Render will automatically build and deploy from your Dockerfile
+3. Monitor the deploy logs for any errors
+
+### Step 5: Run Database Migrations
+
+After the first deployment, you need to run Prisma migrations:
+
+**Option A: Using Render Shell (recommended)**
+1. Go to your web service in Render dashboard
+2. Click **Shell** tab
+3. Run migration command:
+   ```bash
+   cd /app && npx prisma migrate deploy --schema ./packages/db/prisma/schema.prisma
+   ```
+
+**Option B: Add to Dockerfile CMD (automatic on every deploy)**
+
+Edit your `Dockerfile` CMD to run migrations before starting the app:
+```dockerfile
+CMD ["sh", "-c", "npx prisma migrate deploy --schema ./packages/db/prisma/schema.prisma && cd /app/apps/api && node /app/apps/api/dist/main.js"]
+```
+
+### Step 6: Verify Deployment
+
+1. Visit your Render web service URL: `https://your-app-name.onrender.com`
+2. Check that the app loads and database connections work
+3. Test creating a deposit and verify database writes
+
+---
+
+## Restoring Database Backups to Render
+
+If you have an existing database backup (from `pg_dump` or plain SQL export), you can restore it to your Render managed Postgres using the included `restore.sh` script.
+
+### Prerequisites
+
+- `psql` or `pg_restore` installed locally
+- Database backup file (`.sql` or `.dump` format)
+- Render Postgres External Database URL
+
+### Restore Steps
+
+1. **Get your Render database credentials:**
+   - Open your Render Postgres dashboard
+   - Copy the **External Database URL** 
+   - Parse it to get: `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGPORT`
+
+2. **Set environment variables:**
+   ```bash
+   export PGHOST=dpg-xxxxx.oregon-postgres.render.com
+   export PGUSER=cryptoplatform_user
+   export PGPASSWORD=your_password_here
+   export PGDATABASE=cryptoplatform
+   export PGPORT=5432
+   ```
+
+3. **Run the restore script:**
+   ```bash
+   # For plain SQL files
+   ./restore.sh /path/to/backup.sql
+   
+   # For pg_dump custom format
+   ./restore.sh /path/to/backup.dump
+   ```
+
+The script automatically:
+- Detects file format (SQL vs custom dump)
+- Adds `sslmode=require` for Render connection
+- Uses `--clean --no-owner` flags to avoid permission issues
+- Provides progress output and error handling
+
+### Handling Extensions and Roles
+
+If your backup includes PostgreSQL extensions or custom roles:
+
+**Create required extensions** (if not already present):
+```sql
+-- Connect to Render DB via psql
+psql "$DATABASE_URL"
+
+-- Create extensions as needed
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+```
+
+**Handle role/owner errors:**
+The `restore.sh` script uses `--no-owner` to avoid role ownership issues. If you encounter role errors, you can:
+1. Manually create roles before restore, or
+2. Use Render's default user and ignore role errors (data will restore successfully)
+
+### After Restore
+
+1. **Verify data:**
+   ```bash
+   psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM \"User\";"
+   ```
+
+2. **Run migrations** (if schema changed):
+   ```bash
+   pnpm --filter @repo/db exec prisma migrate deploy
+   ```
+
+3. **Restart your Render web service** to pick up the restored data
+
+---
+
+## Local Development
+
+For local development, you have two options:
+
+### Option A: Use docker-compose.override.yml (Recommended)
+
+This allows you to run a local Postgres container without modifying the main `docker-compose.yml`:
+
+1. **Copy the override example:**
+   ```bash
+   cp docker-compose.override.yml.example docker-compose.override.yml
+   ```
+
+2. **Update your .env to use localhost:**
+   ```bash
+   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cryptoplatform
+   ```
+
+3. **Start services:**
+   ```bash
+   docker compose up -d
+   ```
+
+Docker Compose will automatically merge the override file and start the local Postgres service.
+
+### Option B: Use external Postgres
+
+Install Postgres locally or use a cloud instance, then set `DATABASE_URL` in your `.env`:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cryptoplatform
+```
+
+### Running Migrations Locally
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run migrations
+pnpm --filter @repo/db exec prisma migrate dev
+
+# Generate Prisma client
+pnpm --filter @repo/db exec prisma generate
+
+# Start the app
+pnpm --filter @repo/api start
+```
+
+---
