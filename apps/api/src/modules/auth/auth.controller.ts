@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { SignupDto, LoginDto, RefreshDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
