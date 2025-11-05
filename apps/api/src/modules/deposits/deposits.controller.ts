@@ -334,28 +334,15 @@ export class DepositsController {
             }
           }
         } else if (dep.invoiceId?.startsWith('local-fallback-')) {
-          console.log(`[Deposits] deposit ${dep.id} has local-fallback invoice ${dep.invoiceId} — attempting webhook-event exact match search before skipping settlement`);
-          // Try to find a real invoice id from recent webhook events that match exactly
+          // TRON-only/minimal mode: once on-chain tx is verified and deposit is confirmed,
+          // replace the placeholder invoice id with a synthetic tx-based id to avoid
+          // repeated fallback logs and make idempotency obvious. Skip BTCPay settlement entirely.
           try {
-            const recent = await this.prisma.webhookEvent.findMany({ where: { processed: true }, orderBy: { id: 'desc' }, take: 200 });
-            let foundId: string | null = null;
-            for (const ev of recent) {
-              const payload: any = ev.payload as any;
-              if (!payload) continue;
-              const cand1 = payload?.id || payload?.invoiceId || (payload?.data && payload.data.id);
-              if (cand1) {
-                console.log(`[Deposits][debug] fallback-webhook candidate id=${cand1} eventId=${ev.eventId}`);
-              }
-              // Only exact match, no amount+wallet fallback to avoid mixing up invoices
-              if (cand1 && String(cand1) === String(dep.invoiceId.replace('local-fallback-', ''))) { // assuming local-fallback has the timestamp, but actually we need to match the original id, but since we don't have it, perhaps skip or find another way
-                // Wait, for local-fallback, we don't have the original id, so perhaps don't update
-                console.log(`[Deposits][debug] skipping update for local-fallback as original id unknown`);
-              }
-            }
-            // For local-fallback, don't update invoiceId, just skip settlement
-            console.log(`[Deposits] no exact match found for local-fallback ${dep.invoiceId} (deposit ${dep.id}) — skipping settlement`);
+            const syntheticId = `tx-${txHash}`;
+            await this.prisma.deposit.update({ where: { id: dep.id }, data: { invoiceId: syntheticId } as any });
+            console.log(`[Deposits] deposit ${dep.id} used minimal mode (local-fallback). Replaced invoiceId with synthetic ${syntheticId} and skipped BTCPay settlement (expected in TRON-only mode).`);
           } catch (e) {
-            console.warn('[Deposits] fallback search for local-fallback invoice failed', e?.message || e);
+            console.warn('[Deposits] failed to set synthetic tx-based invoiceId for local-fallback', e?.message || e);
           }
         }
       }
@@ -475,7 +462,19 @@ export class DepositsController {
             }
           }
           if (!foundId) {
-            results.push({ depositId: d.id, resolved: false });
+            // If no BTCPay invoice was found and the deposit has a txHash, migrate the invoiceId
+            // to a synthetic tx-based id to clean up local-fallbacks in TRON-only environments.
+            if (d.txHash) {
+              const synthetic = `tx-${d.txHash}`;
+              try {
+                await this.prisma.deposit.update({ where: { id: d.id }, data: { invoiceId: synthetic } as any });
+                results.push({ depositId: d.id, resolved: true, syntheticInvoiceId: synthetic, note: 'no matching BTCPay invoice; set synthetic tx-based id' });
+              } catch (e) {
+                results.push({ depositId: d.id, resolved: false, error: e?.message || String(e) });
+              }
+            } else {
+              results.push({ depositId: d.id, resolved: false });
+            }
             continue;
           }
           console.log(`[Deposits][reconcile] found invoice id ${foundId} for deposit ${d.id}`);
