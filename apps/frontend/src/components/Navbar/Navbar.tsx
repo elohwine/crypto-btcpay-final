@@ -54,6 +54,9 @@ const Navbar: React.FC = () => {
       <h3>Others</h3>
       <ul>
         <li>
+          <NavbarButton url="/about" icon="info" title="About Us" />
+        </li>
+        <li>
           <NavbarButton
             url="/members"
             icon="account_circle"

@@ -12,12 +12,14 @@ import NotFoundScreen from "../screens/NotFound/NotFoundScreen";
 import DashboardScreen from "../screens/Dashboard/DashboardScreen";
 import TransactionsScreen from "../screens/Transactions/TransactionsScreen";
 import AdminScreen from "../screens/Admin/AdminScreen";
+import AboutScreen from "../screens/About/AboutScreen";
 import { DemoNotifications } from "../components/DemoNotifications";
 import ProtectedRoute from "../components/Common/ProtectedRoute";
 
 const Navigation: React.FC = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
+    <Route path="/about" element={<AboutScreen />} />
     <Route path="/market" element={<MarketScreen />} />
     <Route path="/landing" element={<LandingPage />} />
     <Route path="/members/signin" element={<SigninScreen />} />
