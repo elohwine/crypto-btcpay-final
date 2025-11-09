@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Container,
   Title,
   Text,
   Stack,
@@ -12,11 +11,9 @@ import {
   Timeline,
   Divider,
   List,
-  Box,
   useMantineTheme,
   Button,
   Grid,
-  AppShell,
 } from "@mantine/core";
 import {
   IconTrendingUp,
@@ -31,7 +28,7 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
-import TopNav from "../../components/TopNav/TopNav";
+import SiteLayout from "../../layouts/SiteLayout";
 import Header from "../../components/Header/Header";
 import PlanCard from "../../components/PlanCard/PlanCard";
 import { INVESTMENT_PLANS } from "../../types/investment";
@@ -42,8 +39,7 @@ const AboutScreen: React.FC = () => {
   const isDark = (theme as any).colorScheme === "dark";
 
   return (
-    <AppShell padding={0}>
-      <TopNav />
+    <SiteLayout>
       <div
         style={{
           padding: "12px",
@@ -461,7 +457,7 @@ const AboutScreen: React.FC = () => {
           </Stack>
         </Card>
       </div>
-    </AppShell>
+    </SiteLayout>
   );
 };
 
