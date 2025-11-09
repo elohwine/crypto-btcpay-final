@@ -32,14 +32,25 @@ import {
 } from "@tabler/icons-react";
 import PlanCard from "../../components/PlanCard/PlanCard";
 import { INVESTMENT_PLANS } from "../../types/investment";
+import TopNav from "../../components/TopNav/TopNav";
+import RiskDisclaimer, {
+  useRiskDisclaimer,
+} from "../../components/RiskDisclaimer/RiskDisclaimer";
 
 const LandingPage: React.FC = () => {
   const theme = useMantineTheme();
   const primary = theme.colors[theme.primaryColor][6];
   const primaryLight = theme.colors[theme.primaryColor][1];
+  const disclaimer = useRiskDisclaimer();
 
   return (
     <AppShell padding={0}>
+      <TopNav />
+      <RiskDisclaimer
+        opened={disclaimer.opened}
+        onClose={disclaimer.close}
+        autoShow={true}
+      />
       {/* Hero */}
       <Box
         py={100}
@@ -411,6 +422,14 @@ const LandingPage: React.FC = () => {
               Minimum investment starts at just $10 • USDT only • 10% referral
               bonus
             </Text>
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={disclaimer.open}
+              style={{ color: "white", opacity: 0.8 }}
+            >
+              View Risk Disclaimer
+            </Button>
           </Stack>
         </Container>
       </Box>
