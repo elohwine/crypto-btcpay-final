@@ -28,21 +28,12 @@ const TopNav: React.FC = () => {
     highlight?: boolean;
   };
 
-  const publicNavLinks: NavLink[] = [
+  // TopNav is only shown for non-authenticated users (public routes)
+  const navLinks: NavLink[] = [
     { to: "/", label: "Home" },
     { to: "/about", label: "About Us" },
     { to: "/members/signup", label: "Investment Plans", highlight: true },
   ];
-
-  const authenticatedNavLinks: NavLink[] = [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/capital", label: "My Wallet" },
-    { to: "/transactions", label: "Transactions" },
-    { to: "/members", label: "Profile" },
-    { to: "/admin", label: "Admin" },
-  ];
-
-  const navLinks = user ? authenticatedNavLinks : publicNavLinks;
 
   const isActive = (path: string) => location.pathname === path;
 

@@ -1,21 +1,37 @@
 import React from "react";
 import TopNav from "../components/TopNav/TopNav";
+import Navbar from "../components/Navbar/Navbar";
 import { Box, useMantineColorScheme, useMantineTheme } from "@mantine/core";
+import { useAuth } from "../lib/auth";
 
 interface IProps { children: React.ReactNode }
 
-// Replaces sidebar SiteLayout with a sticky top navigation bar.
-// Provides consistent padding and max-width container for page content.
+// Conditional layout: sidebar drawer for logged-in users, top nav for public users.
 const TopLayout: React.FC<IProps> = ({ children }) => {
   const { colorScheme } = useMantineColorScheme();
   const theme = useMantineTheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuth();
 
+  // If user is logged in, show sidebar layout
+  if (user) {
+    return (
+      <div className="site-layout">
+        <div className="navbar">
+          <Navbar />
+        </div>
+        <div className="site-content">
+          <main>{children}</main>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is NOT logged in, show top navigation layout
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <TopNav />
       <main style={{ flex: 1 }}>
-        {/* Individual screens can override layout by not relying on Container if they need full-bleed sections */}
         {children}
       </main>
       <Box component="footer" py="xl" style={{ background: isDark ? theme.colors.dark[8] : theme.colors.gray[1], textAlign: "center" }}>
