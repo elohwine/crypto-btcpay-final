@@ -363,6 +363,29 @@ body {
   background-color: var(--surface);
 }
 
+/* Site Layout - Sidebar + Content */
+.site-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.site-layout .navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20%;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.site-layout .site-content {
+  flex: 1;
+  margin-left: 20%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
 i,
 button i,
 a i {

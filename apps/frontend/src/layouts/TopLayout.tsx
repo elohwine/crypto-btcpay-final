@@ -13,7 +13,7 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
   const isDark = colorScheme === "dark";
   const { user } = useAuth();
 
-  // If user is logged in, show sidebar layout
+  // If user is logged in, show sidebar layout (classic flex layout)
   if (user) {
     return (
       <div className="site-layout">
@@ -21,7 +21,7 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
           <Navbar />
         </div>
         <div className="site-content">
-          <main>{children}</main>
+          {children}
         </div>
       </div>
     );
