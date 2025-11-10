@@ -22,11 +22,27 @@ const TopNav: React.FC = () => {
   const { user } = useAuth();
   const isDark = (theme as any).colorScheme === "dark";
 
-  const navLinks = [
+  type NavLink = {
+    to: string;
+    label: string;
+    highlight?: boolean;
+  };
+
+  const publicNavLinks: NavLink[] = [
     { to: "/", label: "Home" },
     { to: "/about", label: "About Us" },
     { to: "/members/signup", label: "Investment Plans", highlight: true },
   ];
+
+  const authenticatedNavLinks: NavLink[] = [
+    { to: "/dashboard", label: "Dashboard" },
+    { to: "/capital", label: "My Wallet" },
+    { to: "/transactions", label: "Transactions" },
+    { to: "/members", label: "Profile" },
+    { to: "/admin", label: "Admin" },
+  ];
+
+  const navLinks = user ? authenticatedNavLinks : publicNavLinks;
 
   const isActive = (path: string) => location.pathname === path;
 
