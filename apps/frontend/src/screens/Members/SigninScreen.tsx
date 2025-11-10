@@ -8,7 +8,7 @@ import { useAuth } from "../../lib/auth";
 
 // components
 import Box from "../../components/Common/Box";
-import SiteLayout from "../../layouts/SiteLayout";
+import TopLayout from "../../layouts/TopLayout";
 import FormInput from "../../components/Forms/FormInput";
 import FormButton from "../../components/Forms/FormButton";
 
@@ -68,7 +68,7 @@ const SigninScreen: React.FC = () => {
   };
 
   return (
-    <SiteLayout>
+  <TopLayout>
       <div className="flex flex-center full-height">
         <div className="login no-select">
           <Box>
@@ -139,7 +139,7 @@ const SigninScreen: React.FC = () => {
           </Box>
         </div>
       </div>
-    </SiteLayout>
+  </TopLayout>
   );
 };
 

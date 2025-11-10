@@ -1,10 +1,10 @@
 ## Quick orientation for AI contributors
 
-This repo implements a small crypto deposit platform using NestJS (API), Prisma/Postgres (DB) and a tiny Express static `web` frontend. BTCPay Server (testnet) and related services are available via Docker Compose. Use the files referenced below when making changes.
+This repo implements a small crypto deposit platform using NestJS (API), Prisma/Postgres (DB) and a React frontend (`apps/frontend`). BTCPay Server (testnet) and related services are available via Docker Compose. Use the files referenced below when making changes.
 
 High-level architecture (why it exists)
 - API: `apps/api` (NestJS) — exposes deposit endpoints, creates BTCPay invoices, receives webhooks, and posts ledger entries.
-- Web: `apps/web` (Express static) — simple static pages that call the API to create deposits.
+- Frontend: `apps/frontend` (React + Mantine) — user interface for deposits and account management.
 - DB: `packages/db/prisma/schema.prisma` — Postgres models for users, deposits, ledger entries, and webhook events.
 - BTCPay & infra: wired via `docker-compose.yml` for local full-stack runs (db, btcpay, nbxplorer, bitcoind, api, web).
 
@@ -85,7 +85,7 @@ This platform supports two deposit flows. Important rule: the API must create th
 
   - Implementation notes & current status:
     - Backend: already implemented. `deposits.controller.ts` creates invoices with `walletAddress` included in invoice metadata. `webhooks.controller.ts` reconciles payments and posts ledger entries.
-    - Frontend: the repo includes `apps/web/deposit.html` but does not contain a ready-made Tron wallet auto-send integration. Implement a client-side TronWallet integration in `apps/web` (or a SPA) that first requests an invoice from the API, then calls the Tron wallet SDK to send funds.
+  - Frontend: implement Tron wallet auto-send integration in the React app (e.g. a deposit form that triggers invoice creation then calls Tron SDK). Always create the BTCPay invoice server-side first.
     - Important: Always create the BTCPay invoice and persist the `Deposit` BEFORE initiating a client-side transfer. Do not mark deposits as confirmed from the client — rely on BTCPay webhooks for settlement.
 
 2) Scan QR / manual-transfer flow
@@ -97,7 +97,7 @@ This platform supports two deposit flows. Important rule: the API must create th
 
   - Implementation notes & current status:
     - Backend: supported out-of-the-box. `DepositsController` returns `paymentUrl`/`checkout` values used to render QR codes. `WebhooksController` reconciles identical to the auto-wallet flow.
-    - Frontend: deposit page should render a QR code for `paymentUrl` returned by the API (this exists as `paymentUrl` in the deposit response). If you add QR rendering, put it in `apps/web/deposit.html`.
+  - Frontend: deposit view should render a QR code for `paymentUrl` returned by the API (this exists as `paymentUrl` in the deposit response). Add QR rendering inside the React deposit component.
 
 3) Cross-cutting rules (both flows)
   - The BTCPay invoice MUST be created by the API and used as the single source of truth for settlement and receipts.
@@ -107,7 +107,7 @@ This platform supports two deposit flows. Important rule: the API must create th
 
 Where we left off
  - Backend: invoice creation, metadata, and webhook reconciliation (including posting two ledger entries) are already implemented in `apps/api/src/modules/*` controllers and services.
- - Frontend: manual QR/checkout is already supported (API returns `paymentUrl`), but browser-integrated TronWallet auto-send needs a client-side implementation (Tron SDK) to call the wallet; the backend is ready to reconcile.
+ - Frontend: React app renders deposit/landing pages; TronWallet auto-send still needs integration (call API to create invoice then prompt wallet transfer). Backend ready to reconcile.
 
 
 stop making half complete edits/refctors and claiming all is well,, review every edit against original goal!!

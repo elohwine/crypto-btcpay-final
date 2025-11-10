@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // components
-import SiteLayout from "../../layouts/SiteLayout";
+import TopLayout from "../../layouts/TopLayout";
 import Header from "../../components/Header/Header";
 import TopBar from "../../components/Tables/TopBar/TopBar";
 import CapitalRow from "../../components/Tables/Capital/CapitalRow";
@@ -153,7 +153,7 @@ const CapitalScreen: React.FC = () => {
   };
 
   return (
-    <SiteLayout>
+  <TopLayout>
       <Header icon="sort" title="Market" />
       <TopBar
         searchValue={keyword}
@@ -187,7 +187,7 @@ const CapitalScreen: React.FC = () => {
           </tbody>
         </table>
       )}
-    </SiteLayout>
+  </TopLayout>
   );
 };
 

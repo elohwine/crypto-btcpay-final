@@ -1,11 +1,11 @@
 // components
 import Box from "../../components/Common/Box";
-import SiteLayout from "../../layouts/SiteLayout";
+import TopLayout from "../../layouts/TopLayout";
 import Header from "../../components/Header/Header";
 import BankProcess from "../../components/Widgets/BankProcess/BankProcess";
 
 const DashboardScreen: React.FC = () => (
-  <SiteLayout>
+  <TopLayout>
     <Header icon="sort" title="Crypto Deposits" />
     <div className="flex flex-destroy flex-space-between">
       <div className="flex-1">
@@ -61,7 +61,7 @@ const DashboardScreen: React.FC = () => (
         </Box>
       </div>
     </div>
-  </SiteLayout>
+  </TopLayout>
 );
 
 export default DashboardScreen;

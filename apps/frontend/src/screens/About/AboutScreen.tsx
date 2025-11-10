@@ -28,7 +28,7 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
-import SiteLayout from "../../layouts/SiteLayout";
+import TopLayout from "../../layouts/TopLayout";
 import Header from "../../components/Header/Header";
 import PlanCard from "../../components/PlanCard/PlanCard";
 import { INVESTMENT_PLANS } from "../../types/investment";
@@ -39,7 +39,7 @@ const AboutScreen: React.FC = () => {
   const isDark = (theme as any).colorScheme === "dark";
 
   return (
-    <SiteLayout>
+  <TopLayout>
       <div
         style={{
           padding: "12px",
@@ -457,7 +457,7 @@ const AboutScreen: React.FC = () => {
           </Stack>
         </Card>
       </div>
-    </SiteLayout>
+  </TopLayout>
   );
 };
 

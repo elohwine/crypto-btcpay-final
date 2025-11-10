@@ -114,7 +114,7 @@ services:
       - "3001:3001"
 
   web:
-    build: ./apps/web
+  # (Removed legacy apps/web static site)
     env_file: ./.env
     depends_on:
       - api

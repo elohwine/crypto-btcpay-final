@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // components
-import SiteLayout from "../../layouts/SiteLayout";
+import TopLayout from "../../layouts/TopLayout";
 import Header from "../../components/Header/Header";
 import TopBar from "../../components/Tables/TopBar/TopBar";
 import TransactionRow from "../../components/Tables/Transactions/TransactionRow";
@@ -95,7 +95,7 @@ const TransactionsScreen: React.FC = () => {
   };
 
   return (
-    <SiteLayout>
+  <TopLayout>
       <Header icon="sort" title="Transactions" />
       <TopBar
         searchValue={keyword}
@@ -126,7 +126,7 @@ const TransactionsScreen: React.FC = () => {
           </tbody>
         </table>
       )}
-    </SiteLayout>
+  </TopLayout>
   );
 };
 

@@ -6,20 +6,20 @@ Your platform is now configured for **USDT deposits via TronLink** with the foll
 
 ### Infrastructure (Running)
 - ✅ **PostgreSQL** (db) - Database for all services
-- ✅ **BTCPay Server 2.2.1** (btcpay) - Payment processor at http://localhost:49392
+- ✅ **BTCPay Server 2.2.1** (btcpay) - Payment processor at http://localhost:49392 (optional)
 - ✅ **NestJS API** (api) - Backend API at http://localhost:3001
-- ✅ **Express Web** (web) - Frontend with TronLink integration at http://localhost:3000
+- ✅ **React Frontend** (frontend) - User interface at http://localhost:3000
 
 ### BTC Services (Inactive - profiles: btc/optional)
 - ⏸️ bitcoind, nbxplorer, redis - Not started (use `--profile btc` to enable if needed)
 
 ### TronLink Integration ✅
-The web frontend (`/apps/web/deposit.html`) includes:
-- **TronLink wallet detection** (automatic on page load)
+React frontend deposit component should include:
+- **TronLink wallet detection** (on mount)
 - **Connect/disconnect** wallet functionality
 - **Address display** and validation
-- **USDT deposit form** that sends wallet address to API
-- Works with both legacy and modern TronLink versions
+- **USDT deposit form** that sends wallet address to API to create invoice
+- Works with both legacy and modern TronLink versions (implement via TronLink JS API)
 
 ---
 
@@ -99,10 +99,7 @@ sudo docker compose restart api
 ## 🧪 Test End-to-End Deposit Flow
 
 ### 1. Open the deposit page:
-```bash
-# In your browser:
-http://localhost:3000/deposit/new
-```
+Navigate in browser to the React route (e.g. `http://localhost:3000/deposit/new`).
 
 ### 2. Connect TronLink:
 - Install TronLink Chrome extension if not installed
@@ -239,8 +236,6 @@ sudo docker compose exec db psql -U postgres -d cryptoplatform
 
 - **docker-compose.yml** - Infrastructure configuration
 - **.env** - Environment variables (BTCPay credentials)
-- **apps/api/.env** - API-specific overrides
-- **apps/web/deposit.html** - TronLink integration + deposit form
 - **apps/api/src/modules/btcpay/btcpay.service.ts** - BTCPay API client
 - **apps/api/src/modules/deposits/deposits.controller.ts** - Deposit creation endpoint
 - **apps/api/src/modules/webhooks/webhooks.controller.ts** - BTCPay webhook handler

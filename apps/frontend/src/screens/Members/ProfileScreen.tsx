@@ -1,11 +1,11 @@
 // components
-import SiteLayout from "../../layouts/SiteLayout";
+import TopLayout from "../../layouts/TopLayout";
 import Header from "../../components/Header/Header";
 import Profile from "../../components/Widgets/Profile/Profile";
 import RecentActivity from "../../components/Widgets/RecentActivity/RecentActivity";
 
 const ProfileScreen: React.FC = () => (
-  <SiteLayout>
+  <TopLayout>
     {/* Include the global Header so navigation, theme switch and session UI appear on the Profile page */}
     <div
       style={{
@@ -28,7 +28,7 @@ const ProfileScreen: React.FC = () => (
         <RecentActivity />
       </div>
     </div>
-  </SiteLayout>
+  </TopLayout>
 );
 
 export default ProfileScreen;
