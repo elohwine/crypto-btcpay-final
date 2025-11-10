@@ -70,7 +70,7 @@ const TopNav: React.FC = () => {
                 letterSpacing: "-0.5px",
               }}
             >
-              Capital One Trading
+              Magnum
             </Text>
           </Link>
 

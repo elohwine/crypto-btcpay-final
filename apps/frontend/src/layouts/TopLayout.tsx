@@ -14,9 +14,15 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
         {/* Individual screens can override layout by not relying on Container if they need full-bleed sections */}
         {children}
       </main>
-      <footer style={{ padding: "1.5rem 0", textAlign: "center", fontSize: 14, opacity: 0.7 }}>
-        © {new Date().getFullYear()} Capital One Trading. All rights reserved.
-      </footer>
+            </main>
+      <Box component="footer" py="xl" style={{ background: isDark ? theme.colors.dark[8] : theme.colors.gray[1], textAlign: "center" }}>
+        © {new Date().getFullYear()} Magnum. All rights reserved.
+      </Box>
+    </div>
+  );
+};
+
+export default TopLayout;
     </div>
   );
 };

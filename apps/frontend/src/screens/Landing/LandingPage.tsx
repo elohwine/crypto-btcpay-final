@@ -128,7 +128,7 @@ const LandingPage: React.FC = () => {
                       <IconUsers size={24} />
                     </Avatar>
                     <div>
-                      <Text fw={600}>Capital One Trader</Text>
+                      <Text fw={600}>Magnum Trader</Text>
                       <Text size="sm" c="dimmed">Crypto Investor</Text>
                     </div>
                   </Group>
@@ -519,7 +519,7 @@ const LandingPage: React.FC = () => {
           {/* Trust indicators */}
           <Stack align="center" gap="lg" mt={60}>
             <Title order={3} size="h4" ta="center">
-              Why Choose Capital One Trading?
+              Why Choose Magnum?
             </Title>
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" style={{ maxWidth: 800 }}>
               <Group>
@@ -640,7 +640,7 @@ const LandingPage: React.FC = () => {
                   </div>
                 </Group>
                 <Text c="dimmed" style={{ lineHeight: 1.7 }}>
-                  "As a day trader, I need a platform that's fast and reliable. This crypto exchange delivers on both fronts. The USDT liquidity on Tron is excellent, and I can execute trades instantly. The interface is intuitive, making it easy to track my portfolio. Security features give me peace of mind knowing my investments are protected."
+                  "As a day trader, I need a platform that's fast and reliable. Magnum delivers on both fronts. The USDT liquidity on Tron is excellent, and I can execute trades instantly. The interface is intuitive, making it easy to track my portfolio. Security features give me peace of mind knowing my investments are protected."
                 </Text>
               </Card>
             </Grid.Col>

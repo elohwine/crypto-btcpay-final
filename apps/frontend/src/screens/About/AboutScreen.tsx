@@ -48,7 +48,7 @@ const AboutScreen: React.FC = () => {
           boxSizing: "border-box",
         }}
       >
-        <Header title="About Capital One Trading" icon="info" />
+        <Header title="About Magnum" icon="info" />
 
         {/* Introduction */}
         <Card shadow="sm" padding="xl" radius="md" mb="xl">
@@ -58,7 +58,7 @@ const AboutScreen: React.FC = () => {
                 <IconTrendingUp size={32} />
               </ThemeIcon>
               <div>
-                <Title order={2}>What is Capital One Trading Investment?</Title>
+                <Title order={2}>What is Magnum Investment?</Title>
                 <Text size="sm" c="dimmed">
                   Real binary options trading with guaranteed returns
                 </Text>
@@ -66,7 +66,7 @@ const AboutScreen: React.FC = () => {
             </Group>
 
             <Text size="md" style={{ lineHeight: 1.7 }}>
-              CAPITAL ONE TRADING INVESTMENT is an investment program based on{" "}
+              MAGNUM is an investment program based on{" "}
               <strong>real binary options trading</strong>. Unlike other programs,
               we don't circulate funds from member to member. Instead, we make real
               profits from real markets and distribute them among members according

@@ -20,7 +20,7 @@ interface RiskDisclaimerProps {
   autoShow?: boolean;
 }
 
-const DISCLAIMER_KEY = "capital-one-disclaimer-accepted";
+const DISCLAIMER_KEY = "magnum-disclaimer-accepted";
 
 const RiskDisclaimer: React.FC<RiskDisclaimerProps> = ({
   opened,
@@ -67,7 +67,7 @@ const RiskDisclaimer: React.FC<RiskDisclaimerProps> = ({
         </Badge>
 
         <Text size="sm" style={{ lineHeight: 1.6 }}>
-          Capital One Trading Investment involves significant risk. By using our
+          Magnum Investment involves significant risk. By using our
           platform, you acknowledge and accept the following:
         </Text>
 
