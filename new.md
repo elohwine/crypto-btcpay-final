@@ -296,7 +296,7 @@ export default function CryptoLandingPage() {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-sm text-gray-600 mb-2">Magnum</h3>
+              <h3 className="text-sm text-gray-600 mb-2">Crypto Exchange</h3>
               <p className="text-2xl font-bold text-gray-900 mb-4">$49,979.36</p>
               <div className="grid grid-cols-6 gap-1 h-20">
                 {Array.from({length: 24}).map((_, i) => (
@@ -338,7 +338,7 @@ export default function CryptoLandingPage() {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-sm text-gray-600 mb-4">Magnum</h3>
+              <h3 className="text-sm text-gray-600 mb-4">Trading Exchange</h3>
               <div className="h-32 flex items-end space-x-1">
                 {[40, 60, 45, 70, 55, 65, 50, 75, 60, 55, 70, 50].map((height, i) => (
                   <div key={i} className="flex-1 rounded-t" style={{ backgroundColor: i % 2 === 0 ? '#10B981' : '#EF4444', height: `${height}%` }}></div>
@@ -446,7 +446,7 @@ export default function CryptoLandingPage() {
                 </div>
               </div>
               <p className="text-gray-600 leading-relaxed">
-                "As a day trader, I need a platform that's fast and reliable. Magnum delivers on both fronts. The USDT liquidity on Tron is excellent, and I can execute trades instantly. The interface is intuitive, making it easy to track my portfolio. Security features give me peace of mind knowing my investments are protected."
+                "As a day trader, I need a platform that's fast and reliable. This crypto exchange delivers on both fronts. The USDT liquidity on Tron is excellent, and I can execute trades instantly. The interface is intuitive, making it easy to track my portfolio. Security features give me peace of mind knowing my investments are protected."
               </p>
             </div>
           </div>
