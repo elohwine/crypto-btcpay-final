@@ -19,67 +19,70 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const location = useLocation();
 
-  // Auto-close drawer on route change (mobile)
+  // Auto-close drawer on route change (mobile only)
   useEffect(() => {
-    if (isMobile) {
+    if (isMobile && drawerOpened) {
       close();
     }
-  }, [location.pathname, isMobile, close]);
+  }, [location.pathname]);
 
   // If user is logged in, show sidebar layout with mobile drawer
   if (user) {
     return (
-      <div style={{ minHeight: "100vh" }}>
+      <>
         {/* Mobile Header with Burger */}
-        <Box
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 100,
-            background: isDark ? theme.colors.dark[7] : "white",
-            borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-            padding: "12px 16px",
-            display: isMobile ? "block" : "none",
-          }}
-        >
-          <Group justify="space-between">
-            <Text size="lg" fw={700}>Magnum</Text>
-            <Burger opened={drawerOpened} onClick={toggle} size="sm" />
-          </Group>
-        </Box>
-
-        {/* Desktop Sidebar */}
-        <div className="site-layout" style={{ display: isMobile ? "none" : "flex" }}>
-          <div className="navbar">
-            <Navbar />
-          </div>
-          <div className="site-content">
-            {children}
-          </div>
-        </div>
-
-        {/* Mobile Drawer */}
-        <Drawer
-          opened={drawerOpened}
-          onClose={close}
-          size="80%"
-          padding="md"
-          styles={{
-            content: {
-              background: isDark ? theme.colors.dark[7] : "white",
-            },
-          }}
-        >
-          <Navbar />
-        </Drawer>
-
-        {/* Mobile Content (when drawer is hidden) */}
         {isMobile && (
+          <Box
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 100,
+              background: isDark ? theme.colors.dark[7] : "white",
+              borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+              padding: "12px 16px",
+            }}
+          >
+            <Group justify="space-between">
+              <Text size="lg" fw={700}>Magnum</Text>
+              <Burger opened={drawerOpened} onClick={toggle} size="sm" />
+            </Group>
+          </Box>
+        )}
+
+        {/* Desktop: Fixed Sidebar Layout */}
+        {!isMobile ? (
+          <div className="site-layout">
+            <div className="navbar">
+              <Navbar />
+            </div>
+            <div className="site-content">
+              {children}
+            </div>
+          </div>
+        ) : (
+          // Mobile: Content without sidebar
           <div style={{ padding: "16px" }}>
             {children}
           </div>
         )}
-      </div>
+
+        {/* Mobile Drawer - Only rendered when needed */}
+        {isMobile && (
+          <Drawer
+            opened={drawerOpened}
+            onClose={close}
+            size="80%"
+            padding={0}
+            styles={{
+              content: {
+                background: isDark ? theme.colors.dark[7] : "white",
+              },
+            }}
+          >
+            <Navbar />
+          </Drawer>
+        )}
+      </>
     );
   }
 
