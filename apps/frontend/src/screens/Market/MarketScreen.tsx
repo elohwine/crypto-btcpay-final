@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
 // components
-import MainLayout from "../../layouts/MainLayout";
-import Header from "../../components/Header/Header";
+// components
+import TopLayout from "../../layouts/TopLayout";
 import Market from "../../components/Widgets/Market/Market";
 import BuySell from "../../components/Widgets/BuySell/BuySell";
 import BuyOrders from "../../components/Widgets/BuyOrders/BuyOrders";
@@ -74,9 +74,8 @@ const MarketScreen: React.FC = () => {
   };
 
   return (
-    <MainLayout>
+    <TopLayout>
       <div className="content">
-        <Header title="Market" />
         <div className="flex flex-destroy">
           <div className="content-30 box-right-padding">
             <Market />
@@ -116,7 +115,7 @@ const MarketScreen: React.FC = () => {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </TopLayout>
   );
 };
 
