@@ -4,7 +4,6 @@ import { IconCopy, IconCheck, IconBrandTelegram, IconGift } from "@tabler/icons-
 // components
 import Box from "../../components/Common/Box";
 import TopLayout from "../../layouts/TopLayout";
-import Header from "../../components/Header/Header";
 import BankProcess from "../../components/Widgets/BankProcess/BankProcess";
 import { useAuth } from "../../lib/auth";
 
@@ -14,8 +13,6 @@ const DashboardScreen: React.FC = () => {
 
   return (
     <TopLayout>
-      <Header icon="sort" title="Crypto Deposits" />
-
       {/* Referral and Telegram Cards */}
       <Grid mb="lg">
         <Grid.Col span={{ base: 12, md: 6 }}>

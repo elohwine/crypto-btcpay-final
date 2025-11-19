@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 
 // components
 import TopLayout from "../../layouts/TopLayout";
-import Header from "../../components/Header/Header";
 import TopBar from "../../components/Tables/TopBar/TopBar";
 import TransactionRow from "../../components/Tables/Transactions/TransactionRow";
 
@@ -95,8 +94,7 @@ const TransactionsScreen: React.FC = () => {
   };
 
   return (
-  <TopLayout>
-      <Header icon="sort" title="Transactions" />
+    <TopLayout>
       <TopBar
         searchValue={keyword}
         searchSubmit={handleSearchSubmit}
@@ -126,7 +124,7 @@ const TransactionsScreen: React.FC = () => {
           </tbody>
         </table>
       )}
-  </TopLayout>
+    </TopLayout>
   );
 };
 

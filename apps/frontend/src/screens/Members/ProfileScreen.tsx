@@ -1,6 +1,5 @@
 // components
 import TopLayout from "../../layouts/TopLayout";
-import Header from "../../components/Header/Header";
 import Profile from "../../components/Widgets/Profile/Profile";
 import RecentActivity from "../../components/Widgets/RecentActivity/RecentActivity";
 
@@ -15,10 +14,6 @@ const ProfileScreen: React.FC = () => (
         boxSizing: "border-box",
       }}
     >
-      <div style={{ width: "100%", marginBottom: 18 }}>
-        <Header title="Profile" />
-      </div>
-
       <div style={{ width: "100%", marginBottom: 28 }}>
         <Profile />
       </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 // hooks
 import useFormEvents from "../../hooks/useFormEvents";
@@ -20,6 +20,7 @@ interface IFormProps {
 
 const SigninScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   useFormEvents();
   const { signin } = useAuth();
   const [formValues, setFormValues] = useState<IFormProps>({
@@ -33,7 +34,19 @@ const SigninScreen: React.FC = () => {
     setIsLoading(true);
     try {
       await signin(email, password);
-      navigate("/dashboard");
+
+      // Check for returnTo and planData in location state
+      const state = location.state as any;
+      if (state?.returnTo) {
+        navigate(state.returnTo, {
+          state: {
+            selectedPlan: state.planData,
+            prefillAmount: state.planData?.minInvest
+          }
+        });
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       // Error is handled in auth.tsx with notify
     } finally {
@@ -68,7 +81,7 @@ const SigninScreen: React.FC = () => {
   };
 
   return (
-  <TopLayout>
+    <TopLayout>
       <div className="flex flex-center full-height">
         <div className="login no-select">
           <Box>
@@ -139,7 +152,7 @@ const SigninScreen: React.FC = () => {
           </Box>
         </div>
       </div>
-  </TopLayout>
+    </TopLayout>
   );
 };
 

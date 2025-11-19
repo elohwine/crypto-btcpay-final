@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Select,
   TextInput,
@@ -54,6 +55,9 @@ const BankProcess: React.FC = () => {
   const [lottieType, setLottieType] = useState<"success" | "failed" | null>(
     null
   );
+  const [selectedPlanInfo, setSelectedPlanInfo] = useState<any>(null);
+  const [prefillAmount, setPrefillAmount] = useState<number | null>(null);
+  const location = useLocation();
   const NETWORKS: { key: string; label: string }[] = [
     { key: "BTC", label: "BTC" },
     { key: "TRC20", label: "TRC20 (TRON)" },
@@ -85,8 +89,7 @@ const BankProcess: React.FC = () => {
             setDepositResult(res.data);
             setTxStatus("confirmed");
             setOutput(
-              `✅ Deposit ${
-                res.data.depositId || res.data.id
+              `✅ Deposit ${res.data.depositId || res.data.id
               } confirmed on-chain and settled.`
             );
             try {
@@ -99,8 +102,7 @@ const BankProcess: React.FC = () => {
             if (res && res.data) setDepositResult(res.data);
             // keep user informed
             setOutput(
-              `ℹ️ Deposit ${depositId} status: ${
-                res?.data?.status || "unknown"
+              `ℹ️ Deposit ${depositId} status: ${res?.data?.status || "unknown"
               }`
             );
           }
@@ -178,8 +180,7 @@ const BankProcess: React.FC = () => {
     try {
       const body = lastResp?.body || lastResp || "unknown error";
       setOutput(
-        `❌ Failed to report tx to server: ${
-          typeof body === "string" ? body : JSON.stringify(body)
+        `❌ Failed to report tx to server: ${typeof body === "string" ? body : JSON.stringify(body)
         }`
       );
     } catch (e) {
@@ -246,6 +247,17 @@ const BankProcess: React.FC = () => {
     }
     fetchPublicList();
   }, []);
+
+  // Handle plan prefill from navigation state
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.selectedPlan) {
+      setSelectedPlanInfo(state.selectedPlan);
+    }
+    if (state?.prefillAmount) {
+      setPrefillAmount(state.prefillAmount);
+    }
+  }, [location.state]);
 
   // fetch store default TRON address to use as QR fallback when invoice/paymentUrl is missing
   useEffect(() => {
@@ -761,6 +773,26 @@ const BankProcess: React.FC = () => {
    and the CSS module classes (styles.input, styles.select, styles.chip, styles.chipActive,
    styles.primaryBtn, styles.ghostBtn, styles.statusBox) already present in your project. */}
 
+            {/* Selected Plan Info Banner */}
+            {selectedPlanInfo && (
+              <Alert
+                icon={<IconInfoCircle size={16} />}
+                color="blue"
+                variant="light"
+                style={{ marginTop: 12 }}
+                onClose={() => setSelectedPlanInfo(null)}
+                withCloseButton
+              >
+                <div style={{ fontSize: 14 }}>
+                  <strong>Selected Plan: {selectedPlanInfo.name}</strong>
+                </div>
+                <div style={{ fontSize: 12, marginTop: 4, opacity: 0.9 }}>
+                  {selectedPlanInfo.ror}% daily returns for {selectedPlanInfo.duration} days
+                  • Investment range: ${selectedPlanInfo.minInvest?.toLocaleString()} - ${selectedPlanInfo.maxInvest?.toLocaleString()}
+                </div>
+              </Alert>
+            )}
+
             <form
               onSubmit={handleCreateDeposit}
               className={styles.depositForm}
@@ -852,7 +884,8 @@ const BankProcess: React.FC = () => {
                     <TextInput
                       id="amount"
                       name="amount"
-                      defaultValue={String(10)}
+                      defaultValue={String(prefillAmount || 10)}
+                      key={prefillAmount || "default"}
                       required
                       type="number"
                       inputMode="decimal"
@@ -920,9 +953,8 @@ const BankProcess: React.FC = () => {
             {/* Tiles row placed directly under the form (Invoice / Deposit ID / Status) */}
             <div className={styles.tilesRow}>
               <div
-                className={`${styles.infoTile} ${
-                  depositResult?.invoiceId ? styles.hasData : ""
-                }`}
+                className={`${styles.infoTile} ${depositResult?.invoiceId ? styles.hasData : ""
+                  }`}
               >
                 <div
                   style={{
@@ -971,9 +1003,8 @@ const BankProcess: React.FC = () => {
                 </div>
               </div>
               <div
-                className={`${styles.infoTile} ${
-                  depositResult?.depositId ? styles.hasData : ""
-                }`}
+                className={`${styles.infoTile} ${depositResult?.depositId ? styles.hasData : ""
+                  }`}
               >
                 <div
                   style={{
@@ -1019,9 +1050,8 @@ const BankProcess: React.FC = () => {
                 </div>
               </div>
               <div
-                className={`${styles.infoTilePrimary} ${
-                  depositResult?.status ? styles.hasData : ""
-                }`}
+                className={`${styles.infoTilePrimary} ${depositResult?.status ? styles.hasData : ""
+                  }`}
               >
                 <div
                   style={{
@@ -1135,13 +1165,12 @@ const BankProcess: React.FC = () => {
                     color={color}
                     variant={variant}
                     aria-live="polite"
-                    className={`${styles.statusAlert} ${
-                      st === "CONFIRMED"
-                        ? styles.statusSuccess
-                        : st === "PENDING" || st === "NEW" || st === "ONCHAIN"
+                    className={`${styles.statusAlert} ${st === "CONFIRMED"
+                      ? styles.statusSuccess
+                      : st === "PENDING" || st === "NEW" || st === "ONCHAIN"
                         ? styles.statusPending
                         : styles.statusFailed
-                    }`}
+                      }`}
                     style={{
                       border:
                         st === "PENDING" || st === "NEW" || st === "ONCHAIN"
@@ -1163,59 +1192,58 @@ const BankProcess: React.FC = () => {
                       {(depositResult?.explorerUrl ||
                         depositResult?.txHash ||
                         lastReportAttempt) && (
-                        <div
-                          style={{
-                            marginLeft: 12,
-                            display: "flex",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                        >
-                          {(depositResult?.explorerUrl ||
-                            depositResult?.txHash) && (
-                            <button
-                              onClick={() => {
-                                const url =
-                                  depositResult?.explorerUrl ||
-                                  (depositResult?.txHash
-                                    ? (window as any)._NETWORK === "mainnet"
-                                      ? `https://tronscan.org/#/transaction/${depositResult.txHash}`
-                                      : `https://shasta.tronscan.org/#/transaction/${depositResult.txHash}`
-                                    : null);
-                                if (url) window.open(url, "_blank");
-                              }}
-                              className={styles.ghostBtn}
-                              aria-label="View on explorer"
-                            >
-                              <IconExternalLink size={14} />
-                            </button>
-                          )}
-                          {lastReportAttempt && (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  setOutput("🔁 Retrying report to server...");
-                                  await reportTxAndStartPoll(
-                                    lastReportAttempt.txHash,
-                                    lastReportAttempt.to,
-                                    lastReportAttempt.amount
-                                  );
-                                } catch (e: any) {
-                                  setOutput(
-                                    `❌ Retry failed: ${
-                                      e?.message || String(e)
-                                    }`
-                                  );
-                                }
-                              }}
-                              className={styles.ghostBtn}
-                              aria-label="Retry reporting transaction"
-                            >
-                              Retry report
-                            </button>
-                          )}
-                        </div>
-                      )}
+                          <div
+                            style={{
+                              marginLeft: 12,
+                              display: "flex",
+                              gap: 8,
+                              alignItems: "center",
+                            }}
+                          >
+                            {(depositResult?.explorerUrl ||
+                              depositResult?.txHash) && (
+                                <button
+                                  onClick={() => {
+                                    const url =
+                                      depositResult?.explorerUrl ||
+                                      (depositResult?.txHash
+                                        ? (window as any)._NETWORK === "mainnet"
+                                          ? `https://tronscan.org/#/transaction/${depositResult.txHash}`
+                                          : `https://shasta.tronscan.org/#/transaction/${depositResult.txHash}`
+                                        : null);
+                                    if (url) window.open(url, "_blank");
+                                  }}
+                                  className={styles.ghostBtn}
+                                  aria-label="View on explorer"
+                                >
+                                  <IconExternalLink size={14} />
+                                </button>
+                              )}
+                            {lastReportAttempt && (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    setOutput("🔁 Retrying report to server...");
+                                    await reportTxAndStartPoll(
+                                      lastReportAttempt.txHash,
+                                      lastReportAttempt.to,
+                                      lastReportAttempt.amount
+                                    );
+                                  } catch (e: any) {
+                                    setOutput(
+                                      `❌ Retry failed: ${e?.message || String(e)
+                                      }`
+                                    );
+                                  }
+                                }}
+                                className={styles.ghostBtn}
+                                aria-label="Retry reporting transaction"
+                              >
+                                Retry report
+                              </button>
+                            )}
+                          </div>
+                        )}
                       {/* show a small failed animation inside the alert when reporting failed */}
                       {txStatus === "report-failed" && (
                         <div style={{ marginLeft: 12, pointerEvents: "none" }}>
