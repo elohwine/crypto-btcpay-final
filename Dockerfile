@@ -69,9 +69,8 @@ COPY packages/db/prisma ./packages/db/prisma
 	# frontend build output is at /app/apps/frontend/build when using workspace layout
 	COPY --from=frontend-builder /app/apps/frontend/build ./apps/api/public
 
-# Expose port (Render will set PORT env)
-EXPOSE 3001
-ENV PORT=3001
+# Expose port (Fly.io uses 8080, Render uses PORT env var)
+EXPOSE 8080
 ENV NODE_ENV=production
 
 # Generate Prisma client at runtime (ensures .prisma/client exists), then start API

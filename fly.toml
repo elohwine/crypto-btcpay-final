@@ -1,0 +1,41 @@
+# Fly.io configuration for crypto-btcpay-final (combined frontend + API service)
+# Generated for Magnum crypto deposit platform
+
+app = "crypto-btcpay-final"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+  API_PORT = "3001"
+  BTCPAY_ENABLED = "false"
+  SKIP_BTCPAY = "true"
+  TRON_NETWORK = "shasta"
+  TRON_PROVIDER_URL = "https://api.shasta.trongrid.io"
+  TRON_USDT_DECIMALS = "6"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/api/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024
+
+[deploy]
+  release_command = "cd /app/packages/db && pnpm exec prisma migrate deploy --schema ./prisma/schema.prisma"
