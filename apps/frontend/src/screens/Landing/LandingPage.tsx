@@ -78,7 +78,7 @@ const LandingPage: React.FC = () => {
         onClose={disclaimer.close}
         autoShow={true}
       />
-      
+
       {/* Hero Section */}
       <Box
         py={80}
@@ -95,6 +95,9 @@ const LandingPage: React.FC = () => {
               <br />
               Currency Values.
             </Title>
+            <Badge size="xl" variant="gradient" gradient={{ from: 'orange', to: 'red' }}>
+              🎁 10% Welcome Bonus on First Investment!
+            </Badge>
             <Text size="xl" c="dimmed" ta="center" style={{ maxWidth: 700 }}>
               Invest in USDT on Tron Network with real-time tracking and secure transactions
             </Text>
@@ -690,8 +693,8 @@ const LandingPage: React.FC = () => {
               </Button>
             </Group>
             <Text size="sm" ta="center" c="white" style={{ opacity: 0.9 }}>
-              Minimum investment starts at just $10 • USDT only • 10% referral
-              bonus
+              Minimum investment starts at just $50 • USDT only • 10% welcome
+              bonus • 10% referral bonus
             </Text>
             <Button
               variant="subtle"
@@ -704,7 +707,7 @@ const LandingPage: React.FC = () => {
           </Stack>
         </Container>
       </Box>
-  </TopLayout>
+    </TopLayout>
   );
 };
 

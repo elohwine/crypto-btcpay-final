@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    dependencies:
+      prisma:
+        specifier: 5.18.0
+        version: 5.18.0
 
   apps/api:
     dependencies:
@@ -198,7 +202,6 @@ importers:
       '@prisma/client':
         specifier: 5.18.0
         version: 5.18.0(prisma@5.18.0)
-    devDependencies:
       prisma:
         specifier: 5.18.0
         version: 5.18.0

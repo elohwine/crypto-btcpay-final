@@ -18,7 +18,7 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
     id: "trial",
     name: "NEW MEMBER TRIAL PLAN",
     badge: "LIMITED PLACES",
-    minInvest: 10,
+    minInvest: 50,
     maxInvest: 100,
     ror: 5,
     duration: 14,

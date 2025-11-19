@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 // hooks
 import useFormEvents from "../../hooks/useFormEvents";
@@ -30,6 +30,7 @@ interface IFormProps {
   identityType: string;
   identityNumber: string;
   dateOfBirth: string;
+  referralCode: string;
   agreeToPolicies1: boolean;
   agreeToPolicies2: boolean;
   agreeToPolicies3: boolean;
@@ -39,6 +40,7 @@ const SignupScreen: React.FC = () => {
   const { onlyEmail } = useFormEvents();
   const navigate = useNavigate();
   const { signup } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [formValues, setFormValues] = useState<IFormProps>({
     email: "",
@@ -51,11 +53,20 @@ const SignupScreen: React.FC = () => {
     identityType: "",
     identityNumber: "",
     dateOfBirth: "",
+    referralCode: "",
     agreeToPolicies1: false,
     agreeToPolicies2: false,
     agreeToPolicies3: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Extract referral code from URL
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      setFormValues((prev) => ({ ...prev, referralCode: refCode }));
+    }
+  }, [searchParams]);
 
   /**
    * Handles input changes in the sign-up form.
@@ -117,7 +128,7 @@ const SignupScreen: React.FC = () => {
   };
 
   return (
-  <TopLayout>
+    <TopLayout>
       <div className="flex flex-center">
         <div className="login no-select">
           <Box>
@@ -238,6 +249,19 @@ const SignupScreen: React.FC = () => {
 
                     <div className="form-line">
                       <div className="full-width">
+                        <label htmlFor="referralCode">Referral Code (Optional)</label>
+                        <FormInput
+                          type="text"
+                          name="referralCode"
+                          onChange={handleChange}
+                          value={formValues.referralCode}
+                          placeholder="Enter referral code if you have one"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-line">
+                      <div className="full-width">
                         <FormCheckbox
                           name="agreeToPolicies1"
                           onChange={handleCheckboxChange}
@@ -265,7 +289,7 @@ const SignupScreen: React.FC = () => {
           </Box>
         </div>
       </div>
-  </TopLayout>
+    </TopLayout>
   );
 };
 

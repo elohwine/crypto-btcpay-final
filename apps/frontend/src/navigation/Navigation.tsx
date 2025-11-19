@@ -13,6 +13,7 @@ import DashboardScreen from "../screens/Dashboard/DashboardScreen";
 import TransactionsScreen from "../screens/Transactions/TransactionsScreen";
 import AdminScreen from "../screens/Admin/AdminScreen";
 import AboutScreen from "../screens/About/AboutScreen";
+import SupportScreen from "../screens/Support/SupportScreen";
 import { DemoNotifications } from "../components/DemoNotifications";
 import ProtectedRoute from "../components/Common/ProtectedRoute";
 
@@ -73,6 +74,7 @@ const Navigation: React.FC = () => (
         </ProtectedRoute>
       }
     />
+    <Route path="/support" element={<SupportScreen />} />
     <Route path="*" element={<NotFoundScreen />} />
   </Routes>
 );

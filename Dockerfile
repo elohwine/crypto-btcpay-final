@@ -57,12 +57,17 @@ COPY packages/db/package.json ./packages/db/
 # Install with dev dependencies so prisma CLI is available
 RUN pnpm install --prod=false --filter "./apps/api" --filter "./packages/db"
 
+
 # Copy API runtime artifacts to their original package path
 RUN mkdir -p ./apps/api/dist
 COPY --from=api-builder /app/apps/api/dist ./apps/api/dist
 
 # Copy Prisma schema for migrations
 COPY packages/db/prisma ./packages/db/prisma
+
+# Copy release.sh for Fly.io release command
+COPY release.sh ./release.sh
+RUN chmod +x ./release.sh
 
 	# Copy frontend build into API's public/ folder (ServeStaticModule expects ../public from dist)
 	RUN mkdir -p ./apps/api/public
