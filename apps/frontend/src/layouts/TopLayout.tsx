@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import TopNav from "../components/TopNav/TopNav";
 import Navbar from "../components/Navbar/Navbar";
+import UnifiedHeader from "../components/UnifiedHeader/UnifiedHeader";
 import { Box, useMantineColorScheme, useMantineTheme, Group, Text, Anchor, Drawer, Burger } from "@mantine/core";
 import { useAuth } from "../lib/auth";
 import { IconBrandWhatsapp, IconBrandTelegram } from "@tabler/icons-react";
@@ -9,7 +9,7 @@ import { useLocation } from "react-router-dom";
 
 interface IProps { children: React.ReactNode }
 
-// Conditional layout: sidebar drawer for logged-in users, top nav for public users.
+// Conditional layout with unified header for all pages
 const TopLayout: React.FC<IProps> = ({ children }) => {
   const { colorScheme } = useMantineColorScheme();
   const theme = useMantineTheme();
@@ -19,31 +19,34 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const location = useLocation();
 
-  // Auto-close drawer on route change (mobile only)
+  // Auto-close sidebar drawer on route change (mobile only)
   useEffect(() => {
     if (isMobile && drawerOpened) {
       close();
     }
   }, [location.pathname]);
 
-  // If user is logged in, show sidebar layout with mobile drawer
+  // If user is logged in, show unified header + sidebar layout
   if (user) {
     return (
       <>
-        {/* Mobile Header with Burger */}
+        {/* Unified Header */}
+        <UnifiedHeader />
+
+        {/* Mobile Header with Burger for Sidebar */}
         {isMobile && (
           <Box
             style={{
               position: "sticky",
-              top: 0,
-              zIndex: 100,
+              top: 64, // Below unified header
+              zIndex: 99,
               background: isDark ? theme.colors.dark[7] : "white",
               borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
               padding: "12px 16px",
             }}
           >
             <Group justify="space-between">
-              <Text size="lg" fw={700}>Magnum</Text>
+              <Text size="sm" fw={600}>Menu</Text>
               <Burger opened={drawerOpened} onClick={toggle} size="sm" />
             </Group>
           </Box>
@@ -51,7 +54,7 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
 
         {/* Desktop: Fixed Sidebar Layout */}
         {!isMobile ? (
-          <div className="site-layout">
+          <div className="site-layout" style={{ marginTop: 0 }}>
             <div className="navbar">
               <Navbar />
             </div>
@@ -61,12 +64,12 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
           </div>
         ) : (
           // Mobile: Content without sidebar
-          <div style={{ padding: "16px" }}>
+          <div style={{ padding: "16px", marginTop: 0 }}>
             {children}
           </div>
         )}
 
-        {/* Mobile Drawer - Only rendered when needed */}
+        {/* Mobile Sidebar Drawer */}
         {isMobile && (
           <Drawer
             opened={drawerOpened}
@@ -86,11 +89,11 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
     );
   }
 
-  // If user is NOT logged in, show top navigation layout
+  // If user is NOT logged in, show unified header + public layout
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <TopNav />
-      <main style={{ flex: 1 }}>
+    <>
+      <UnifiedHeader />
+      <main style={{ minHeight: "calc(100vh - 64px)" }}>
         {children}
       </main>
       <Box component="footer" py="xl" style={{ background: isDark ? theme.colors.dark[8] : theme.colors.gray[1] }}>
@@ -110,7 +113,7 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
         </Group>
         <Text size="sm" ta="center">© {new Date().getFullYear()} Magnum. All rights reserved.</Text>
       </Box>
-    </div>
+    </>
   );
 };
 

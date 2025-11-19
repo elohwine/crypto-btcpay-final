@@ -261,6 +261,7 @@ const LandingPage: React.FC = () => {
 
       {/* Investment Plans Section */}
       <Box
+        id="plans"
         py={100}
         style={{
           background: isDark

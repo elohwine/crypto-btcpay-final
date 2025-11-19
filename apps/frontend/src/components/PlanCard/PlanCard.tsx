@@ -15,7 +15,8 @@ import {
 } from "@mantine/core";
 import { IconCheck, IconTrendingUp, IconStar } from "@tabler/icons-react";
 import { InvestmentPlan, calculateTotalReturn } from "../../types/investment";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../lib/auth";
 import "./PlanCard.css";
 
 interface PlanCardProps {
@@ -25,6 +26,8 @@ interface PlanCardProps {
 const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
   const theme = useMantineTheme();
   const isDark = (theme as any).colorScheme === "dark";
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Calculate example returns for max investment
   const exampleReturn = calculateTotalReturn(
@@ -36,10 +39,37 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
   const bgGradient = plan.popular
     ? `linear-gradient(135deg, ${theme.colors[theme.primaryColor][6]} 0%, ${theme.colors[theme.primaryColor][8]} 100%)`
     : isDark
-    ? theme.colors.dark[6]
-    : theme.colors.gray[0];
+      ? theme.colors.dark[6]
+      : theme.colors.gray[0];
 
   const textColor = plan.popular ? "white" : undefined;
+
+  const handlePlanSelect = () => {
+    if (!user) {
+      // Unauthenticated: redirect to signin with plan data
+      navigate("/members/signin", {
+        state: {
+          returnTo: "/dashboard",
+          planData: {
+            id: plan.id,
+            name: plan.name,
+            minInvest: plan.minInvest,
+            maxInvest: plan.maxInvest,
+            ror: plan.ror,
+            duration: plan.duration,
+          },
+        },
+      });
+    } else {
+      // Authenticated: go to dashboard with prefilled data
+      navigate("/dashboard", {
+        state: {
+          selectedPlan: plan,
+          prefillAmount: plan.minInvest,
+        },
+      });
+    }
+  };
 
   return (
     <Card
@@ -52,8 +82,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
         border: plan.popular
           ? `2px solid ${theme.colors[theme.primaryColor][4]}`
           : plan.limited
-          ? `2px solid ${theme.colors.yellow[6]}`
-          : `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+            ? `2px solid ${theme.colors.yellow[6]}`
+            : `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
         transition: "all 0.3s ease",
         position: "relative",
         overflow: "visible",
@@ -153,8 +183,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
             background: plan.popular
               ? "rgba(255,255,255,0.15)"
               : isDark
-              ? theme.colors.dark[5]
-              : theme.colors.gray[1],
+                ? theme.colors.dark[5]
+                : theme.colors.gray[1],
           }}
         >
           <Text size="xs" c={textColor ? "white" : "dimmed"} mb={4}>
@@ -175,8 +205,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
             plan.popular
               ? "rgba(255,255,255,0.2)"
               : isDark
-              ? theme.colors.dark[4]
-              : theme.colors.gray[3]
+                ? theme.colors.dark[4]
+                : theme.colors.gray[3]
           }
         />
 
@@ -209,8 +239,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
           size="lg"
           radius="md"
           fullWidth
-          component={Link}
-          to="/members/signup"
+          onClick={handlePlanSelect}
           variant={plan.popular ? "white" : "filled"}
           color={plan.popular ? "dark" : theme.primaryColor}
           style={{
@@ -218,7 +247,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
             fontWeight: 600,
           }}
         >
-          Get Started
+          {user ? "Invest Now" : "Get Started"}
         </Button>
       </Stack>
     </Card>
