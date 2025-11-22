@@ -47,12 +47,19 @@ export const ChatAssistantProvider: React.FC<{ children: React.ReactNode }> = ({
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
-                setMessages(parsed.map((m: any) => ({
-                    ...m,
-                    timestamp: new Date(m.timestamp)
-                })));
+                // Ensure parsed data is an array before mapping
+                if (Array.isArray(parsed)) {
+                    setMessages(parsed.map((m: any) => ({
+                        ...m,
+                        timestamp: new Date(m.timestamp)
+                    })));
+                } else {
+                    console.warn('Chat history is not an array, clearing...');
+                    localStorage.removeItem('chat_history');
+                }
             } catch (e) {
                 console.error('Failed to load chat history', e);
+                localStorage.removeItem('chat_history');
             }
         }
     }, []);
