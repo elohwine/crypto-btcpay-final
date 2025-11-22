@@ -120,47 +120,56 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                                 </>
                             )}
 
-                            {/* Mobile Burger */}
-                            {isMobile && <Burger opened={drawerOpened} onClick={toggle} size="sm" />}
+                            {/* Mobile Controls */}
+                            {isMobile && (
+                                <>
+                                    <ThemeSwitch />
+                                    {user ? (
+                                        // Authenticated: Show icons only (no hamburger)
+                                        <UserMenu />
+                                    ) : (
+                                        // Public: Show hamburger for nav drawer
+                                        <Burger opened={drawerOpened} onClick={toggle} size="sm" />
+                                    )}
+                                </>
+                            )}
                         </Group>
                     </Group>
                 </Container>
             </Box>
 
-            {/* Mobile Drawer */}
-            <Drawer
-                opened={drawerOpened}
-                onClose={close}
-                size="80%"
-                padding="md"
-                title="Menu"
-                styles={{
-                    title: { fontWeight: 700, fontSize: 18 },
-                    content: {
-                        background: isDark ? theme.colors.dark[7] : "white",
-                    },
-                }}
-            >
-                <Stack gap="lg">
-                    <NavLinks authenticated={!!user} mobile onNavigate={close} />
+            {/* Mobile Drawer - ONLY for unauthenticated users */}
+            {!user && (
+                <Drawer
+                    opened={drawerOpened}
+                    onClose={close}
+                    size="80%"
+                    padding="md"
+                    title="Menu"
+                    styles={{
+                        title: { fontWeight: 700, fontSize: 18 },
+                        content: {
+                            background: isDark ? theme.colors.dark[7] : "white",
+                        },
+                    }}
+                >
+                    <Stack gap="lg">
+                        <NavLinks authenticated={!!user} mobile onNavigate={close} />
 
-                    <Box
-                        style={{
-                            borderTop: `1px solid ${borderColor}`,
-                            paddingTop: 16,
-                        }}
-                    >
-                        <Stack gap="md">
-                            <ThemeSwitch />
-                            {user ? (
-                                <UserMenu />
-                            ) : (
+                        <Box
+                            style={{
+                                borderTop: `1px solid ${borderColor}`,
+                                paddingTop: 16,
+                            }}
+                        >
+                            <Stack gap="md">
+                                <ThemeSwitch />
                                 <AuthButtons />
-                            )}
-                        </Stack>
-                    </Box>
-                </Stack>
-            </Drawer>
+                            </Stack>
+                        </Box>
+                    </Stack>
+                </Drawer>
+            )}
         </>
     );
 };

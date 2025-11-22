@@ -1,61 +1,40 @@
 import React from "react";
-import { Menu, Button, Text, Group } from "@mantine/core";
+import { ActionIcon, Tooltip, Group } from "@mantine/core";
 import {
+    IconChartLine,
     IconUser,
-    IconSettings,
-    IconLogout,
-    IconChevronDown,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../lib/auth";
 
 const UserMenu: React.FC = () => {
-    const { user, signout } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
-
-    const handleLogout = async () => {
-        await signout();
-        navigate("/");
-    };
 
     if (!user) return null;
 
     return (
-        <Menu shadow="md" width={220}>
-            <Menu.Target>
-                <Button variant="subtle" size="sm" rightSection={<IconChevronDown size={16} />}>
-                    <Text size="sm" style={{ maxWidth: 150 }} truncate>
-                        {user.email}
-                    </Text>
-                </Button>
-            </Menu.Target>
+        <Group gap="xs">
+            <Tooltip label="Investments" withArrow>
+                <ActionIcon
+                    variant="subtle"
+                    size="lg"
+                    onClick={() => navigate("/capital")}
+                >
+                    <IconChartLine size={20} />
+                </ActionIcon>
+            </Tooltip>
 
-            <Menu.Dropdown>
-                <Menu.Label>Account</Menu.Label>
-                <Menu.Item
-                    leftSection={<IconUser size={16} />}
+            <Tooltip label="Profile" withArrow>
+                <ActionIcon
+                    variant="subtle"
+                    size="lg"
                     onClick={() => navigate("/members")}
                 >
-                    Profile
-                </Menu.Item>
-                <Menu.Item
-                    leftSection={<IconSettings size={16} />}
-                    onClick={() => navigate("/settings")}
-                >
-                    Settings
-                </Menu.Item>
-
-                <Menu.Divider />
-
-                <Menu.Item
-                    leftSection={<IconLogout size={16} />}
-                    color="red"
-                    onClick={handleLogout}
-                >
-                    Logout
-                </Menu.Item>
-            </Menu.Dropdown>
-        </Menu>
+                    <IconUser size={20} />
+                </ActionIcon>
+            </Tooltip>
+        </Group>
     );
 };
 
