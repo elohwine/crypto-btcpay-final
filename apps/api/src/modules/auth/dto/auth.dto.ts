@@ -4,6 +4,7 @@ export class SignupDto {
   name?: string;
   dateOfBirth?: string;
   phone?: string;
+  referralCode?: string;
 }
 
 export class LoginDto {

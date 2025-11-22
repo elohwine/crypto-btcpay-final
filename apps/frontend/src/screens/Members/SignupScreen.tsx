@@ -117,7 +117,8 @@ const SignupScreen: React.FC = () => {
         formValues.password,
         formValues.name,
         formValues.dateOfBirth || undefined,
-        formValues.phone
+        formValues.phone,
+        formValues.referralCode
       );
       navigate("/dashboard");
     } catch (error) {

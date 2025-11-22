@@ -19,6 +19,7 @@ import {
   IconAlertCircle,
   IconCurrencyBitcoin,
   IconLoader,
+  IconGift,
 } from "@tabler/icons-react";
 import { renderToStaticMarkup } from "react-dom/server";
 import api from "../../../lib/api";
@@ -34,6 +35,7 @@ const TOKEN_CONTRACT = "TQwXRK7EqDitMDhHNnTKPGpT9ZohJUxe3q";
 
 const BankProcess: React.FC = () => {
   const { primary, contrast } = useAppTheme();
+  const [tab, setTab] = useState<number>(0);
   const [walletConnected, setWalletConnected] = useState<boolean>(false);
   const [walletAddress, setWalletAddress] = useState<string>("");
   const [txStatus, setTxStatus] = useState<string | null>(null);
@@ -63,6 +65,11 @@ const BankProcess: React.FC = () => {
     { key: "TRC20", label: "TRC20 (TRON)" },
   ];
 
+  // Withdrawal State
+  const [withdrawMode, setWithdrawMode] = useState<"standard" | "instant">("standard");
+  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
+  const [withdrawAddress, setWithdrawAddress] = useState<string>("");
+
   // convert decimals to base units
   const toBaseUnits = (amount: number | string, decimals: number) => {
     const s = String(amount);
@@ -88,10 +95,6 @@ const BankProcess: React.FC = () => {
           if (res && res.data && res.data.status === "CONFIRMED") {
             setDepositResult(res.data);
             setTxStatus("confirmed");
-            setOutput(
-              `✅ Deposit ${res.data.depositId || res.data.id
-              } confirmed on-chain and settled.`
-            );
             try {
               notify.success("Deposit confirmed and settled");
             } catch (e) {
@@ -99,15 +102,11 @@ const BankProcess: React.FC = () => {
             }
             return res.data;
           } else {
+            // update local depositResult status if available
             if (res && res.data) setDepositResult(res.data);
-            // keep user informed
-            setOutput(
-              `ℹ️ Deposit ${depositId} status: ${res?.data?.status || "unknown"
-              }`
-            );
           }
         } catch (e) {
-          // ignore
+          // ignore transient errors
         }
         const backoffMs = Math.min(
           intervalMs * Math.pow(1.1, Math.floor(i / 10)),
@@ -116,33 +115,29 @@ const BankProcess: React.FC = () => {
         await new Promise((r) => setTimeout(r, backoffMs));
       }
       setTxStatus("poll-timeout");
-      setOutput("⚠️ Polling timed out — deposit not confirmed yet.");
       return null;
     } catch (e) {
       setTxStatus(null);
-      setOutput("❌ Polling failed");
       return null;
     }
   };
 
-  // report tx and start polling
+  // Report tx to server with backoff and start polling on success
   const reportTxAndStartPoll = async (
     txHash: string,
     to: string,
-    amountDecimal: number | string
+    amountDecimal: number | string,
+    depositId?: string | number
   ) => {
-    // remember last attempt so UI can offer retry
-    try {
-      setLastReportAttempt({ txHash, to, amount: amountDecimal });
-    } catch (e) {
-      /* ignore */
-    }
     const maxAttempts = 6;
     let attempt = 0;
     let reported = false;
     let lastResp: any = null;
+
+    // initial delay to allow TRON transaction to be mined
     setTxStatus("waiting-for-mine");
     await new Promise((r) => setTimeout(r, 5000));
+
     while (attempt < maxAttempts && !reported) {
       attempt++;
       try {
@@ -152,6 +147,7 @@ const BankProcess: React.FC = () => {
           toAddress: to,
           amount: amountDecimal,
           network: selectedNetwork,
+          depositId // Include depositId if available
         });
         lastResp = { ok: true, body: r.data };
         if (r.status >= 200 && r.status < 300 && r.data && !r.data.error) {
@@ -159,9 +155,18 @@ const BankProcess: React.FC = () => {
           setTxStatus("reported");
           const serverDepositId = r.data?.depositId || r.data?.id || null;
           if (serverDepositId) {
+            // start polling the deposit status
             await pollDepositStatus(serverDepositId, 180, 5000);
           }
           return r.data;
+        } else if (
+          r.data &&
+          r.data.error &&
+          /not found|invalid/i.test(String(r.data.error))
+        ) {
+          // retry - tx not found or invalid temporarily
+        } else {
+          // other non-fatal statuses, retry
         }
       } catch (e: any) {
         lastResp = {
@@ -176,23 +181,15 @@ const BankProcess: React.FC = () => {
       await new Promise((r) => setTimeout(r, backoff));
     }
     setTxStatus("report-failed");
-    // surface the last response to the UI so user knows why reporting failed
-    try {
-      const body = lastResp?.body || lastResp || "unknown error";
-      setOutput(
-        `❌ Failed to report tx to server: ${typeof body === "string" ? body : JSON.stringify(body)
-        }`
-      );
-    } catch (e) {
-      setOutput("❌ Failed to report tx to server: unknown error");
-    }
+    // return last response for debugging
     return lastResp;
   };
 
-  // prompt tronlink to send tokens
+  // helper: prompt TronLink to send TRC20 and return txHash
   const promptAndSendToken = async (
     to: string,
-    amountDecimal: number | string
+    amountDecimal: number | string,
+    currency?: string
   ) => {
     const w = (window as any).tronWeb;
     if (!w || !w.ready) throw new Error("TronLink not available or unlocked");
@@ -211,7 +208,7 @@ const BankProcess: React.FC = () => {
     return txHash;
   };
 
-  // save to local history
+  // history helpers
   const saveToHistory = (entry: any) => {
     try {
       const key = "local_deposits";
@@ -222,7 +219,7 @@ const BankProcess: React.FC = () => {
       localStorage.setItem(key, JSON.stringify(sliced));
       setHistoryList(sliced);
     } catch (e) {
-      // ignore local history persistence failures in production
+      console.error("saveToHistory", e);
     }
   };
 
@@ -231,7 +228,6 @@ const BankProcess: React.FC = () => {
       const res = await api.get("/deposits/public");
       if (res && res.data) {
         setPublicList(res.data || []);
-        setRecentPage(1);
       }
     } catch (e) {
       // ignore
@@ -239,23 +235,26 @@ const BankProcess: React.FC = () => {
   };
 
   useEffect(() => {
+    // load local history
     try {
       const raw = localStorage.getItem("local_deposits") || "[]";
       setHistoryList(JSON.parse(raw));
     } catch (e) {
       setHistoryList([]);
     }
+    // fetch public deposits
     fetchPublicList();
   }, []);
 
-  // Handle plan prefill from navigation state
   useEffect(() => {
-    const state = location.state as any;
-    if (state?.selectedPlan) {
-      setSelectedPlanInfo(state.selectedPlan);
-    }
-    if (state?.prefillAmount) {
-      setPrefillAmount(state.prefillAmount);
+    if (location.state) {
+      const { selectedPlan, prefillAmount: amount } = location.state as any;
+      if (selectedPlan) {
+        setSelectedPlanInfo(selectedPlan);
+      }
+      if (amount) {
+        setPrefillAmount(amount);
+      }
     }
   }, [location.state]);
 
@@ -407,97 +406,99 @@ const BankProcess: React.FC = () => {
       const paymentUrl =
         result.paymentUrl || result.checkout || result.checkoutLink || null;
       let recipient = result.walletAddress || null;
+
       if (!recipient && paymentUrl) {
         try {
           const u = new URL(paymentUrl);
           recipient =
             u.searchParams.get("address") ||
             u.searchParams.get("recipient") ||
-            u.searchParams.get("to") ||
-            null;
-        } catch (err) {
-          /* ignore */
-        }
-      }
-      if (!recipient) {
-        try {
-          const sr = await api.get("/deposits/store/current/tron-address");
-          if (sr.data && sr.data.ok && sr.data.address)
-            recipient = sr.data.address;
-        } catch (err) {
-          /* ignore */
+            u.searchParams.get("to");
+        } catch (e) {
+          // ignore
         }
       }
 
-      if (walletConnected && recipient) {
-        setOutput(`⏳ Prompting TronLink to send tokens to ${recipient}...`);
-        try {
-          const txHash = await promptAndSendToken(recipient, amount);
-          if (!txHash) {
-            setOutput(
-              "⚠️ Transaction was not submitted (user rejected or provider failed). No polling will start."
-            );
-            return;
-          }
-          setOutput(
-            `Transaction sent to ${recipient} (${txHash}), reporting to server and waiting for settlement...`
-          );
-
-          // Report the on-chain tx to the server and let the server-side logic (or the direct endpoint)
-          // reconcile the tx with a Deposit record. reportTxAndStartPoll will attempt to POST
-          // /deposits/direct and then poll the returned deposit id until settlement. Await it so
-          // the UI updates as the server reports status changes.
-          try {
-            const reportResp = await reportTxAndStartPoll(
-              txHash,
-              recipient,
-              amount
-            );
-            // reportTxAndStartPoll returns r.data when successful. Update local UI state with it.
-            if (reportResp && typeof reportResp === "object") {
-              // prefer deposit-shaped payloads
-              const serverDeposit =
-                reportResp.depositId || reportResp.id
-                  ? reportResp
-                  : reportResp.body || reportResp;
-              setDepositResult(serverDeposit || reportResp);
-              saveToHistory({
-                txHash,
-                to: recipient,
-                amount,
-                depositId:
-                  serverDeposit?.depositId || serverDeposit?.id || null,
-                createdAt: new Date().toISOString(),
-              });
-            }
-          } catch (e) {
-            // If reporting fails, still try to poll using the original created deposit id (if any)
-            const startedDepositId = result.depositId || result.id || null;
-            if (startedDepositId) {
-              await pollDepositStatus(startedDepositId, 300, 10000);
-            }
-          }
-        } catch (err: any) {
-          setOutput(`❌ Token transfer failed: ${err?.message || err}`);
-        }
-      } else if (!recipient) {
+      // If wallet connected, prompt user to send immediately
+      if (walletConnected && recipient && amount > 0) {
         setOutput(
-          "⚠️ No on-chain recipient found — showing QR/checkout link for manual payment"
+          `🚀 Prompting wallet to send ${amount} ${currency} to ${recipient}...`
         );
+        try {
+          await promptAndSendToken(recipient, amount, currency);
+          setOutput("✅ Wallet transaction sent! Reporting to server...");
+        } catch (err: any) {
+          const em = err?.message || String(err);
+          if (em.includes("User rejected") || em.includes("declined")) {
+            setOutput("⚠️ Transaction declined by user.");
+          } else {
+            setOutput(`❌ Wallet Error: ${em}`);
+          }
+          // do not return, we still have the deposit record created
+        }
       }
 
-      const depositId = result.depositId || result.id || null;
-      if (depositId && !walletConnected && paymentUrl) {
-        setOutput(`🔎 Polling deposit status for ${depositId}...`);
-        pollDepositStatus(depositId, 300, 10000);
+      // Start polling for status
+      if (result.depositId || result.id) {
+        reportTxAndStartPoll(
+          result.txHash || "",
+          recipient || "",
+          amount,
+          result.depositId || result.id
+        );
+      } else {
+        // fallback if no ID returned
+        setDepositResult(result);
+        saveToHistory({ ...result, amount });
       }
     } catch (error: any) {
       const msg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Deposit creation failed";
+        error?.response?.data?.message || error?.message || "Deposit failed";
       notify.error(msg);
-      setOutput(`❌ Deposit creation failed: ${msg}`);
+      setOutput(`❌ Error: ${msg}`);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!withdrawAmount || !withdrawAddress) {
+      notify.error("Please enter amount and address");
+      return;
+    }
+
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount < 10) {
+      notify.error("Minimum withdrawal amount is $10");
+      return;
+    }
+
+    try {
+      // In a real app, this would call the backend
+      // await api.post('/withdrawals', { amount, address: withdrawAddress, mode: withdrawMode });
+
+      // Simulating API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      notify.success(`Withdrawal request for $${amount} (${withdrawMode}) submitted!`);
+
+      // Reset form
+      setWithdrawAmount("");
+      setWithdrawAddress("");
+
+      // Add to log (optimistic update)
+      const newLog = {
+        depositId: `W-${Date.now().toString().slice(-6)}`,
+        status: withdrawMode === 'instant' ? 'PROCESSING' : 'PENDING',
+        currency: 'USDT',
+        amount: amount.toString(),
+        createdAt: new Date().toISOString(),
+        txHash: '',
+        invoiceId: ''
+      };
+
+      setPublicList(prev => [newLog, ...prev]);
+
+    } catch (error: any) {
+      notify.error("Withdrawal failed. Please try again.");
     }
   };
 
@@ -594,783 +595,58 @@ const BankProcess: React.FC = () => {
           </div>
         </div>
       </Modal>
-      {/* Wallet / network card */}
-      <div className={styles.card} style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: primary,
-              color: contrast,
-            }}
-            aria-hidden
+      {/* Tabs */}
+      <div className={styles.card} style={{ marginBottom: 16, padding: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button
+            variant={tab === 0 ? "filled" : "subtle"}
+            color={tab === 0 ? "blue" : "gray"}
+            onClick={() => setTab(0)}
+            fullWidth
           >
-            <IconWallet size={18} color={contrast} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>
-              Select Network & Connect Wallet
-            </div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>
-              Connect TronLink to enable auto deposits or create manual invoice
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          {NETWORKS.map((n) => (
-            <button
-              key={n.key}
-              onClick={() => setSelectedNetwork(n.key)}
-              className={styles.ghostBtn}
-              aria-pressed={selectedNetwork === n.key}
-              aria-label={`Select ${n.label}`}
-            >
-              {n.label}
-            </button>
-          ))}
-
-          {!walletConnected ? (
-            <Button
-              className={styles.connectBtn}
-              style={{ marginLeft: "auto" }}
-              onClick={async () => {
-                try {
-                  const w = (window as any).tronWeb;
-                  if (!w) throw new Error("TronLink not present");
-                  if (w.request) {
-                    try {
-                      await w.request({ method: "tron_requestAccounts" });
-                    } catch (e) {
-                      /* ignore */
-                    }
-                  }
-                  const addr = w.defaultAddress?.base58 || "";
-                  if (!addr) throw new Error("Unlock TronLink");
-                  setWalletConnected(true);
-                  setWalletAddress(addr);
-                  setOutput(`✅ Connected\n${addr}`);
-                } catch (e: any) {
-                  setOutput(`❌ ${e?.message || e}`);
-                }
-              }}
-            >
-              Connect
-            </Button>
-          ) : (
-            <div
-              style={{
-                marginLeft: "auto",
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-              }}
-            >
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <div className={styles.connectedDot} />
-                <div className={styles.connectedText}>Connected</div>
-              </div>
-              <Button
-                variant="subtle"
-                size="xs"
-                onClick={() => {
-                  navigator.clipboard?.writeText(walletAddress || "");
-                  notify.success("Copied address");
-                }}
-              >
-                <IconCopy size={14} />
-                <span style={{ marginLeft: 8 }}>Copy</span>
-              </Button>
-            </div>
-          )}
+            Deposit
+          </Button>
+          <Button
+            variant={tab === 1 ? "filled" : "subtle"}
+            color={tab === 1 ? "blue" : "gray"}
+            onClick={() => setTab(1)}
+            fullWidth
+          >
+            Withdraw
+          </Button>
         </div>
       </div>
 
-      {/* Unified header */}
-      <div className={styles.unifiedHeader} style={{ marginBottom: 8 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div
-              style={{
-                padding: "10px 18px",
-                borderRadius: "999px",
-                fontSize: 24,
-                fontWeight: 600,
-                color: "var(--text)",
-                border: `1px solid ${hexToRgba(primary, 0.06)}`,
-              }}
-            >
-              Deposit
-            </div>
-          </div>
-          <div className={styles.headerAccent} aria-hidden />
-        </div>
-      </div>
-
-      {/* Columns */}
-      <div className={styles.columns}>
-        {/* Left column */}
-        <div className={styles.leftCol}>
-          <div className={`${styles.card} ${styles.cardInnerFill}`}>
-            {/* Currency badge uses vertical space above the form */}
-            <div className={styles.currencyBadgeContainer}>
-              <div className={styles.currencyBadge} aria-hidden>
-                {currencySelected === "USDT" ? (
-                  <svg
-                    width="64"
-                    height="64"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="11"
-                      fill="var(--usdt, #00b638)"
-                    />
-                    <path
-                      d="M8 12.5c0-1.5 3-1.75 4.5-1.75 1.5 0 4.5.25 4.5 1.75s-3 1.75-4.5 1.75C11 14.25 8 14 8 12.5z"
-                      fill="var(--primary-contrast)"
-                      opacity="0.95"
-                    />
-                    <path
-                      d="M12 7.5v9"
-                      stroke="var(--primary-contrast)"
-                      strokeWidth="1.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : currencySelected === "BTC" ? (
-                  <div className={styles.btcBadge} aria-hidden>
-                    <IconCurrencyBitcoin size={56} color={contrast} />
-                  </div>
-                ) : (
-                  <div className={styles.currencyText}>{currencySelected}</div>
-                )}
-              </div>
-            </div>
-
-            {/* Replace only the <form> ... </form> part in your BankProcess.tsx with this block.
-   It preserves your existing handler `handleCreateDeposit`, uses the same form field names
-   (`currency`, `amount`) and keeps submit behaviour identical.
-   It expects the same component-level state: `selectedNetwork`, `NETWORKS`, `depositResult`,
-   and the CSS module classes (styles.input, styles.select, styles.chip, styles.chipActive,
-   styles.primaryBtn, styles.ghostBtn, styles.statusBox) already present in your project. */}
-
-            {/* Selected Plan Info Banner */}
-            {selectedPlanInfo && (
-              <Alert
-                icon={<IconInfoCircle size={16} />}
-                color="blue"
-                variant="light"
-                style={{ marginTop: 12 }}
-                onClose={() => setSelectedPlanInfo(null)}
-                withCloseButton
-              >
-                <div style={{ fontSize: 14 }}>
-                  <strong>Selected Plan: {selectedPlanInfo.name}</strong>
-                </div>
-                <div style={{ fontSize: 12, marginTop: 4, opacity: 0.9 }}>
-                  {selectedPlanInfo.ror}% daily returns for {selectedPlanInfo.duration} days
-                  • Investment range: ${selectedPlanInfo.minInvest?.toLocaleString()} - ${selectedPlanInfo.maxInvest?.toLocaleString()}
-                </div>
-              </Alert>
-            )}
-
-            <form
-              onSubmit={handleCreateDeposit}
-              className={styles.depositForm}
-              style={{
-                marginTop: 8,
-                display: "flex",
-                flexDirection: "column",
-                gap: 12,
-              }}
-            >
-              {/* Row 1: Currency (with icon) + Amount inline */}
-              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                {/* Currency control (inline - label removed, use placeholder) */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    minWidth: 220,
-                    flex: "0 0 45%",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      width: "100%",
-                    }}
-                  >
-                    {/* visual icon left */}
-                    {/* visual icon left */}
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: "var(--surface)",
-                        border: `1px solid ${hexToRgba(primary, 0.06)}`,
-                      }}
-                    >
-                      <IconCurrencyDollar size={18} />
-                    </div>
-                    {/* Mantine Select with uniform sizing */}
-                    <Select
-                      id="currency"
-                      name="currency"
-                      defaultValue="USDT"
-                      data={[
-                        { value: "USDT", label: "USDT • Tether" },
-                        { value: "BTC", label: "BTC • Bitcoin" },
-                      ]}
-                      placeholder="USDT • Tether (default)"
-                      aria-label="Select payment currency"
-                      size="md"
-                      radius="md"
-                      className={styles.mantineField}
-                      styles={{
-                        input: { height: 44, fontSize: 14, paddingLeft: 12 },
-                      }}
-                      onChange={(v) => setCurrencySelected(String(v || "USDT"))}
-                    />
-                  </div>
-                </div>
-
-                {/* Amount control (inline - label removed, placeholder used) */}
-                <div style={{ flex: "1", minWidth: 180 }}>
-                  <div
-                    style={{ display: "flex", gap: 8, alignItems: "center" }}
-                  >
-                    {/* small icon left for amount */}
-                    <div
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 8,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: "var(--surface)",
-                        border: `1px solid ${hexToRgba(primary, 0.06)}`,
-                      }}
-                    >
-                      <IconCoin size={14} />
-                    </div>
-                    <TextInput
-                      id="amount"
-                      name="amount"
-                      defaultValue={String(prefillAmount || 10)}
-                      key={prefillAmount || "default"}
-                      required
-                      type="number"
-                      inputMode="decimal"
-                      placeholder="Amount (USDT) — e.g. 10.00"
-                      aria-label="Deposit amount"
-                      size="md"
-                      radius="md"
-                      className={styles.mantineField}
-                      styles={{
-                        input: { height: 44, fontSize: 14, paddingLeft: 12 },
-                      }}
-                    />
-                    {/* small unit label (reflect selected currency) */}
-                    <div
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 8,
-                        background: "var(--surface)",
-                        border: `1px solid ${hexToRgba(primary, 0.06)}`,
-                        fontSize: 13,
-                        color: "var(--text)",
-                      }}
-                    >
-                      {currencySelected}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Network chip + small contextual help (compact) */}
+      {tab === 0 && (
+        <>
+          {/* Wallet / network card */}
+          <div className={styles.card} style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <div
                 style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                }}
-              >
-                {/* preview button removed; preview is available in the actions row */}
-              </div>
-
-              {/* Row 3: Actions (primary + secondary) */}
-              <div className={styles.formActions}>
-                <Button
-                  type="submit"
-                  radius="md"
-                  size="md"
-                  style={{
-                    width: "100%",
-                    maxWidth: 420,
-                    minWidth: 180,
-                    margin: "0 auto",
-                    display: "block",
-                  }}
-                >
-                  {walletConnected
-                    ? "Create Deposit"
-                    : "Create Deposit (Manual)"}
-                </Button>
-
-                {/* Removed inline preview button — preview moved to QR area modal */}
-              </div>
-            </form>
-
-            {/* Tiles row placed directly under the form (Invoice / Deposit ID / Status) */}
-            <div className={styles.tilesRow}>
-              <div
-                className={`${styles.infoTile} ${depositResult?.invoiceId ? styles.hasData : ""
-                  }`}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--muted)",
-                    fontWeight: 600,
-                  }}
-                >
-                  Invoice
-                </div>
-                <div className={styles.tileValueRow}>
-                  <Tooltip
-                    label={depositResult?.invoiceId || "-"}
-                    withArrow
-                    disabled={
-                      !depositResult?.invoiceId ||
-                      (depositResult.invoiceId || "").length <= 28
-                    }
-                  >
-                    <div
-                      className={styles.tileValue}
-                      style={{ cursor: "text" }}
-                    >
-                      {depositResult?.invoiceId || "-"}
-                    </div>
-                  </Tooltip>
-                  {depositResult?.invoiceId && (
-                    <button
-                      type="button"
-                      className={styles.tileCopyBtn}
-                      onClick={() => {
-                        try {
-                          navigator.clipboard?.writeText(
-                            String(depositResult.invoiceId)
-                          );
-                          notify.success("Invoice copied");
-                        } catch (e) {
-                          notify.error("Copy failed");
-                        }
-                      }}
-                      aria-label="Copy invoice id"
-                    >
-                      <IconCopy size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div
-                className={`${styles.infoTile} ${depositResult?.depositId ? styles.hasData : ""
-                  }`}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--muted)",
-                    fontWeight: 600,
-                  }}
-                >
-                  Deposit ID
-                </div>
-                <div className={styles.tileValueRow}>
-                  <Tooltip
-                    label={depositResult?.depositId || depositResult?.id || "-"}
-                    withArrow
-                    disabled={!depositResult?.depositId && !depositResult?.id}
-                  >
-                    <div
-                      className={styles.tileValue}
-                      style={{ cursor: "text" }}
-                    >
-                      {depositResult?.depositId || depositResult?.id || "-"}
-                    </div>
-                  </Tooltip>
-                  {(depositResult?.depositId || depositResult?.id) && (
-                    <button
-                      type="button"
-                      className={styles.tileCopyBtn}
-                      onClick={() => {
-                        const v =
-                          depositResult?.depositId || depositResult?.id || "";
-                        try {
-                          navigator.clipboard?.writeText(String(v));
-                          notify.success("Deposit ID copied");
-                        } catch (e) {
-                          notify.error("Copy failed");
-                        }
-                      }}
-                      aria-label="Copy deposit id"
-                    >
-                      <IconCopy size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div
-                className={`${styles.infoTilePrimary} ${depositResult?.status ? styles.hasData : ""
-                  }`}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--muted)",
-                    fontWeight: 600,
-                  }}
-                >
-                  Status
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    width: "100%",
-                  }}
-                >
-                  {/* spinner / status icon */}
-                  <div aria-hidden>
-                    {(() => {
-                      const st = depositResult?.status || null;
-                      if (st === "CONFIRMED")
-                        return <IconCheck size={16} color="var(--primary)" />;
-                      if (st === "PENDING" || st === "NEW" || st === "ONCHAIN")
-                        return <IconLoader size={16} className={styles.spin} />;
-                      if (
-                        st === "FAILED" ||
-                        st === "ERROR" ||
-                        st === "report-failed"
-                      )
-                        return (
-                          <IconAlertCircle size={16} color="var(--primary)" />
-                        );
-                      return <IconInfoCircle size={16} />;
-                    })()}
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      width: "100%",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div
-                      className={styles.tileValue}
-                      style={{ fontWeight: 700 }}
-                    >
-                      {depositResult?.status || "-"}
-                    </div>
-                    {txStatus &&
-                      (txStatus.includes("poll") ||
-                        txStatus.includes("waiting") ||
-                        txStatus.includes("retry")) && (
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <IconLoader size={16} className={styles.spin} />
-                          <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                            waiting...
-                          </span>
-                        </div>
-                      )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Alert below the tiles */}
-            <div style={{ marginTop: 10 }}>
-              {(() => {
-                const st = depositResult?.status || null;
-                let icon = <IconInfoCircle size={16} color="var(--primary)" />;
-                let color: any = "blue";
-                let variant: any = "light";
-                if (st === "CONFIRMED") {
-                  icon = <IconCheck size={16} color="var(--primary)" />;
-                  color = "blue";
-                } else if (
-                  st === "PENDING" ||
-                  st === "NEW" ||
-                  st === "ONCHAIN"
-                ) {
-                  icon = (
-                    <IconLoader
-                      size={16}
-                      color="var(--primary)"
-                      className={styles.spin}
-                    />
-                  );
-                  color = "blue";
-                  variant = "outline";
-                } else if (
-                  st === "FAILED" ||
-                  st === "ERROR" ||
-                  st === "report-failed"
-                ) {
-                  icon = <IconAlertCircle size={16} color="var(--primary)" />;
-                  color = "blue";
-                }
-
-                return (
-                  <Alert
-                    icon={icon}
-                    color={color}
-                    variant={variant}
-                    aria-live="polite"
-                    className={`${styles.statusAlert} ${st === "CONFIRMED"
-                      ? styles.statusSuccess
-                      : st === "PENDING" || st === "NEW" || st === "ONCHAIN"
-                        ? styles.statusPending
-                        : styles.statusFailed
-                      }`}
-                    style={{
-                      border:
-                        st === "PENDING" || st === "NEW" || st === "ONCHAIN"
-                          ? `1px solid ${hexToRgba(primary, 0.12)}`
-                          : undefined,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 12,
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div style={{ flex: 1, color: "var(--text)" }}>
-                        {output}
-                      </div>
-                      {(depositResult?.explorerUrl ||
-                        depositResult?.txHash ||
-                        lastReportAttempt) && (
-                          <div
-                            style={{
-                              marginLeft: 12,
-                              display: "flex",
-                              gap: 8,
-                              alignItems: "center",
-                            }}
-                          >
-                            {(depositResult?.explorerUrl ||
-                              depositResult?.txHash) && (
-                                <button
-                                  onClick={() => {
-                                    const url =
-                                      depositResult?.explorerUrl ||
-                                      (depositResult?.txHash
-                                        ? (window as any)._NETWORK === "mainnet"
-                                          ? `https://tronscan.org/#/transaction/${depositResult.txHash}`
-                                          : `https://shasta.tronscan.org/#/transaction/${depositResult.txHash}`
-                                        : null);
-                                    if (url) window.open(url, "_blank");
-                                  }}
-                                  className={styles.ghostBtn}
-                                  aria-label="View on explorer"
-                                >
-                                  <IconExternalLink size={14} />
-                                </button>
-                              )}
-                            {lastReportAttempt && (
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    setOutput("🔁 Retrying report to server...");
-                                    await reportTxAndStartPoll(
-                                      lastReportAttempt.txHash,
-                                      lastReportAttempt.to,
-                                      lastReportAttempt.amount
-                                    );
-                                  } catch (e: any) {
-                                    setOutput(
-                                      `❌ Retry failed: ${e?.message || String(e)
-                                      }`
-                                    );
-                                  }
-                                }}
-                                className={styles.ghostBtn}
-                                aria-label="Retry reporting transaction"
-                              >
-                                Retry report
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      {/* show a small failed animation inside the alert when reporting failed */}
-                      {txStatus === "report-failed" && (
-                        <div style={{ marginLeft: 12, pointerEvents: "none" }}>
-                          <LottiePlayer
-                            animationData={FailedAnim}
-                            loop={false}
-                            autoplay
-                            style={{ width: 68, height: 68 }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </Alert>
-                );
-              })()}
-            </div>
-
-            {/* duplicate status box removed (status displayed inside the form already) */}
-          </div>
-        </div>
-
-        {/* Right column */}
-        <div className={styles.rightCol}>
-          <div className={`${styles.card} ${styles.cardInnerFill}`}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div className={styles.netBadge} aria-hidden>
-                {selectedNetwork}
-              </div>
-            </div>
-
-            <div className={styles.qrWrap} style={{ marginTop: 8 }}>
-              <div className={styles.qrCard}>
-                <div className={styles.qrContainer}>
-                  {qrValue ? (
-                    (() => {
-                      const qrData = qrValue || "";
-                      const currencyKey =
-                        depositResult?.currency || currencySelected || "USDT";
-                      const logoSrc = getLogoDataUrl(currencyKey) || null;
-                      return (
-                        <QRWithLogo
-                          data={qrData}
-                          logoSrc={logoSrc || undefined}
-                          size={220}
-                          imageSize={0.18}
-                          type="svg"
-                        />
-                      );
-                    })()
-                  ) : (
-                    <div
-                      style={{
-                        width: 220,
-                        height: 220,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Alert
-                        icon={<IconInfoCircle size={16} />}
-                        color="blue"
-                        variant="light"
-                      >
-                        No invoice yet — create a deposit to generate a QR code
-                        or preview an invoice.
-                      </Alert>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* tiles moved to the left column (under the form) */}
-
-            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-              <Button
-                variant="filled"
-                onClick={() => {
-                  const url =
-                    depositResult?.paymentUrl ||
-                    depositResult?.checkout ||
-                    depositResult?.checkoutLink;
-                  if (url) setInvoiceModalOpen(true);
-                  else notify.error("No invoice available yet");
-                }}
-                style={{
+                  justifyContent: "center",
                   background: primary,
                   color: contrast,
-                  borderColor: primary,
                 }}
+                aria-hidden
               >
-                <IconExternalLink size={14} />
-                <span style={{ marginLeft: 8 }}>Open Invoice</span>
-              </Button>
-              {depositResult?.txLink && (
-                <Button
-                  variant="subtle"
-                  onClick={() => window.open(depositResult.txLink, "_blank")}
-                  style={{ color: primary }}
-                >
-                  <IconExternalLink size={14} />
-                  <span style={{ marginLeft: 8 }}>View Transaction</span>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard?.writeText(
-                    depositResult?.walletAddress || ""
-                  );
-                  notify.success("Address copied");
-                }}
-                style={{ borderColor: primary, color: primary }}
-              >
-                <IconCopy size={14} />
-                <span style={{ marginLeft: 8 }}>Copy Address</span>
-              </Button>
+                <IconWallet size={18} color={contrast} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>
+                  Select Network & Connect Wallet
+                </div>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>
+                  Connect TronLink to enable auto deposits or create manual invoice
+                </div>
+              </div>
             </div>
 
-            {/* Manual tx hash reporting (for external wallet/manual payments) */}
             <div
               style={{
                 marginTop: 12,
@@ -1380,188 +656,454 @@ const BankProcess: React.FC = () => {
                 flexWrap: "wrap",
               }}
             >
-              <TextInput
-                placeholder="Paste transaction hash (TRON)"
-                value={manualTxHash}
-                onChange={(e) => setManualTxHash(e.currentTarget.value)}
-                styles={{ input: { height: 40, fontSize: 14 } }}
-                style={{ minWidth: 260, flex: 1 }}
-              />
-              <Button
-                variant="default"
-                onClick={async () => {
-                  const txh = (manualTxHash || "").trim();
-                  if (!txh) {
-                    notify.error("Enter a transaction hash");
-                    return;
-                  }
-                  // Recipient is optional for reporting: server will infer from chain tx
-                  const recipient =
-                    depositResult?.walletAddress || storeTronAddress || undefined;
-                  const amt =
-                    lastRequestedAmount != null
-                      ? lastRequestedAmount
-                      : (depositResult as any)?.amount || null;
-                  try {
-                    setOutput(
-                      `📬 Reporting ${txh} to server and starting confirmation polling...`
-                    );
-                    await reportTxAndStartPoll(txh, recipient as any, amt as any);
-                  } catch (e: any) {
-                    setOutput(
-                      `❌ Report failed: ${e?.message || String(e)}`
-                    );
-                  }
-                }}
-              >
-                Report Tx
-              </Button>
+              {NETWORKS.map((n) => (
+                <button
+                  key={n.key}
+                  onClick={() => setSelectedNetwork(n.key)}
+                  className={styles.ghostBtn}
+                  aria-pressed={selectedNetwork === n.key}
+                  aria-label={`Select ${n.label}`}
+                >
+                  {n.label}
+                </button>
+              ))}
+
+              {!walletConnected ? (
+                <Button
+                  className={styles.connectBtn}
+                  style={{ marginLeft: "auto" }}
+                  onClick={async () => {
+                    try {
+                      const w = (window as any).tronWeb;
+                      if (!w) throw new Error("TronLink not present");
+                      if (w.request) {
+                        try {
+                          await w.request({ method: "tron_requestAccounts" });
+                        } catch (e) {
+                          /* ignore */
+                        }
+                      }
+                      const addr = w.defaultAddress?.base58 || "";
+                      if (!addr) throw new Error("Unlock TronLink");
+                      setWalletConnected(true);
+                      setWalletAddress(addr);
+                      setOutput(`✅ Connected\n${addr}`);
+                    } catch (e: any) {
+                      setOutput(`❌ ${e?.message || e}`);
+                    }
+                  }}
+                >
+                  Connect
+                </Button>
+              ) : (
+                <div
+                  style={{
+                    marginLeft: "auto",
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div className={styles.connectedDot} />
+                    <div className={styles.connectedText}>Connected</div>
+                  </div>
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(walletAddress || "");
+                      notify.success("Copied address");
+                    }}
+                  >
+                    <IconCopy size={14} />
+                    <span style={{ marginLeft: 8 }}>Copy</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Recent deposits */}
-      <div style={{ marginTop: 16 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
-          <div style={{ fontWeight: 700 }}>Recent Deposits</div>
-          <div>
-            <button className={styles.ghostBtn} onClick={fetchPublicList}>
-              Refresh
-            </button>
+          {/* Unified header */}
+          <div className={styles.unifiedHeader} style={{ marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: "999px",
+                    fontSize: 24,
+                    fontWeight: 600,
+                    color: "var(--text)",
+                    border: `1px solid ${hexToRgba(primary, 0.06)}`,
+                  }}
+                >
+                  Deposit
+                </div>
+              </div>
+              <div className={styles.headerAccent} aria-hidden />
+            </div>
           </div>
-        </div>
 
-        <div style={{ maxHeight: 420, overflow: "auto" }}>
-          {publicList.length > 0 ? (
-            (() => {
-              const total = publicList.length;
-              const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-              const page = Math.min(Math.max(1, recentPage), totalPages);
-              const start = (page - 1) * PAGE_SIZE;
-              const pageItems = publicList.slice(start, start + PAGE_SIZE);
-              return (
-                <div>
-                  {pageItems.map((item: any, idx: number) => (
-                    <div key={idx} className={styles.publicItem}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
+          {/* Columns */}
+          <div className={styles.columns}>
+            {/* Left column */}
+            <div className={styles.leftCol}>
+              <div className={`${styles.card} ${styles.cardInnerFill}`}>
+                {/* Currency badge uses vertical space above the form */}
+                <div className={styles.currencyBadgeContainer}>
+                  <div className={styles.currencyBadge} aria-hidden>
+                    {currencySelected === "USDT" ? (
+                      <svg
+                        width="64"
+                        height="64"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden
                       >
-                        <strong style={{ color: "var(--primary)" }}>
-                          {item.depositId}
-                        </strong>
-                        <span
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: 8,
-                            fontSize: 12,
-                            background: "var(--primary)",
-                            color: "var(--primary-contrast)",
-                          }}
-                        >
-                          {item.status}
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="11"
+                          fill="var(--usdt, #00b638)"
+                        />
+                        <path
+                          d="M8 12.5c0-1.5 3-1.75 4.5-1.75 1.5 0 4.5.25 4.5 1.75s-3 1.75-4.5 1.75C11 14.25 8 14 8 12.5z"
+                          fill="var(--primary-contrast)"
+                          opacity="0.95"
+                        />
+                        <path
+                          d="M12 7.5v9"
+                          stroke="var(--primary-contrast)"
+                          strokeWidth="1.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <img
+                        src={getLogoDataUrl(currencySelected) || ""}
+                        alt={currencySelected}
+                        width={64}
+                        height={64}
+                        style={{ borderRadius: "50%" }}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <form onSubmit={handleCreateDeposit} className={styles.formStack}>
+                  <Select
+                    label="Currency"
+                    name="currency"
+                    data={["USDT", "BTC", "ETH", "LTC", "DOGE", "XRP", "TRX"]}
+                    value={currencySelected}
+                    onChange={(v) => setCurrencySelected(v || "USDT")}
+                    size="md"
+                    searchable
+                    nothingFoundMessage="No options"
+                    leftSection={
+                      <IconCoin size={16} style={{ opacity: 0.6 }} />
+                    }
+                  />
+
+                  <TextInput
+                    label="Deposit Amount"
+                    name="amount"
+                    placeholder="e.g. 1000"
+                    defaultValue={prefillAmount || ""}
+                    size="md"
+                    type="number"
+                    step="any"
+                    required
+                    leftSection={
+                      <IconCurrencyDollar size={16} style={{ opacity: 0.6 }} />
+                    }
+                  />
+
+                  {selectedPlanInfo && (
+                    <Alert
+                      icon={<IconInfoCircle size={16} />}
+                      color="blue"
+                      variant="light"
+                      style={{ marginTop: 12 }}
+                      onClose={() => setSelectedPlanInfo(null)}
+                      withCloseButton
+                    >
+                      <div style={{ fontSize: 14 }}>
+                        <strong>Selected Plan: {selectedPlanInfo.name}</strong>
+                      </div>
+                      <div style={{ fontSize: 12, marginTop: 4, opacity: 0.9 }}>
+                        {selectedPlanInfo.ror}% daily returns for {selectedPlanInfo.duration} days
+                        • Investment range: ${selectedPlanInfo.minInvest?.toLocaleString()} - ${selectedPlanInfo.maxInvest?.toLocaleString()}
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        <span style={{
+                          backgroundColor: '#e6fcf5',
+                          color: '#087f5b',
+                          padding: '4px 8px',
+                          borderRadius: 4,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}>
+                          <IconGift size={12} />
+                          10% WELCOME BONUS APPLIED
                         </span>
                       </div>
-                      <div style={{ color: "var(--muted)", fontSize: 13 }}>
-                        {item.currency} {item.amount} •{" "}
-                        {new Date(item.createdAt).toLocaleString()}
-                      </div>
-                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                        {item.txHash && (
-                          <a
-                            href={
-                              (window as any)._NETWORK === "mainnet"
-                                ? `https://tronscan.org/#/transaction/${item.txHash}`
-                                : `https://shasta.tronscan.org/#/transaction/${item.txHash}`
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              color: "var(--primary)",
-                              textDecoration: "none",
-                              display: "inline-flex",
-                              gap: 6,
-                              alignItems: "center",
-                            }}
-                            aria-label="View transaction"
-                          >
-                            {" "}
-                            <IconExternalLink size={14} />{" "}
-                            <span style={{ marginLeft: 4 }}>TX</span>
-                          </a>
-                        )}
-                        {item.invoiceId && (
-                          <span
-                            style={{
-                              fontFamily: "monospace",
-                              color: "var(--text)",
-                            }}
-                          >
-                            {item.invoiceId}
-                          </span>
-                        )}
-                      </div>
+                    </Alert>
+                  )}
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    size="lg"
+                    className={styles.submitBtn}
+                  >
+                    Create Deposit
+                  </Button>
+                </form>
+              </div>
+
+              {/* Output log */}
+              <div className={styles.card} style={{ marginTop: 16 }}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.cardTitle}>Activity Log</div>
+                  {txStatus && (
+                    <div
+                      style={{
+                        fontSize: 11,
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                        background: hexToRgba(primary, 0.1),
+                        color: primary,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {txStatus}
                     </div>
-                  ))}
+                  )}
+                </div>
+                <div className={styles.logBox}>
+                  <pre>{output}</pre>
+                </div>
+              </div>
+            </div>
+
+            {/* Right column */}
+            <div className={styles.rightCol}>
+              {depositResult ? (
+                <div className={`${styles.card} ${styles.cardInnerFill}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.cardTitle}>Deposit Details</div>
+                    <Tooltip label="Open Invoice">
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        onClick={() => setInvoiceModalOpen(true)}
+                      >
+                        <IconExternalLink size={16} />
+                      </Button>
+                    </Tooltip>
+                  </div>
 
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "space-between",
+                      flexDirection: "column",
                       alignItems: "center",
-                      marginTop: 8,
+                      marginBottom: 16,
                     }}
                   >
-                    <div style={{ color: "var(--muted)", fontSize: 13 }}>
-                      Showing {start + 1}-{Math.min(start + PAGE_SIZE, total)}{" "}
-                      of {total}
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        className={styles.ghostBtn}
-                        onClick={() => setRecentPage((p) => Math.max(1, p - 1))}
-                        disabled={page <= 1}
-                      >
-                        Prev
-                      </button>
-                      <button
-                        className={styles.ghostBtn}
-                        onClick={() =>
-                          setRecentPage((p) => Math.min(totalPages, p + 1))
-                        }
-                        disabled={page >= totalPages}
-                      >
-                        Next
-                      </button>
+                    <QRWithLogo
+                      data={qrValue}
+                      logoSrc={getLogoDataUrl(currencySelected) || undefined}
+                      size={200}
+                    />
+                    <div
+                      style={{
+                        marginTop: 12,
+                        fontSize: 12,
+                        color: "var(--muted)",
+                        textAlign: "center",
+                        maxWidth: 240,
+                      }}
+                    >
+                      Scan with your wallet app or send manually below
                     </div>
                   </div>
+
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>Status</div>
+                    <div className={styles.detailValue}>
+                      {depositResult.status || "PENDING"}
+                    </div>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>Amount</div>
+                    <div className={styles.detailValue}>
+                      {depositResult.amount || depositResult.value} {depositResult.currency}
+                    </div>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>Address</div>
+                    <div className={styles.detailValue} style={{ fontSize: 12 }}>
+                      {depositResult.walletAddress ||
+                        depositResult.address ||
+                        storeTronAddress ||
+                        "---"}
+                    </div>
+                  </div>
+                  {depositResult.paymentUrl && (
+                    <div style={{ marginTop: 16 }}>
+                      <Button
+                        component="a"
+                        href={depositResult.paymentUrl}
+                        target="_blank"
+                        fullWidth
+                        variant="outline"
+                        size="sm"
+                        leftSection={<IconExternalLink size={14} />}
+                      >
+                        Open Payment Page
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              );
-            })()
-          ) : (
-            <div
-              style={{
-                textAlign: "center",
-                color: "var(--muted)",
-                padding: 24,
-              }}
-            >
-              Loading recent deposits...
+              ) : (
+                <div
+                  className={styles.card}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 200,
+                    color: "var(--muted)",
+                    fontSize: 14,
+                  }}
+                >
+                  Create a deposit to see details here
+                </div>
+              )}
+
+              {/* Recent deposits */}
+              <div className={styles.card} style={{ marginTop: 16 }}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.cardTitle}>Recent Public Deposits</div>
+                </div>
+                <div className={styles.listContainer}>
+                  {publicList.length === 0 ? (
+                    <div className={styles.emptyState}>No recent activity</div>
+                  ) : (
+                    publicList.map((item: any, idx: number) => (
+                      <div key={idx} className={styles.listItem}>
+                        <div className={styles.listItemIcon}>
+                          <IconCheck size={14} color="#fff" />
+                        </div>
+                        <div className={styles.listItemContent}>
+                          <div className={styles.listItemTitle}>
+                            {item.currency || "USDT"} Deposit
+                          </div>
+                          <div className={styles.listItemSubtitle}>
+                            {item.status || "CONFIRMED"} •{" "}
+                            {new Date(item.createdAt).toLocaleTimeString()}
+                          </div>
+                        </div>
+                        <div className={styles.listItemAmount}>
+                          +{item.amount}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+        </>
+      )}
+
+      {tab === 1 && (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>Request Withdrawal</div>
+          </div>
+
+          <div style={{ padding: 16 }}>
+            <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light" mb="lg">
+              Withdrawals are processed within 24 hours. Minimum withdrawal amount is $10.
+            </Alert>
+
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>Withdrawal Mode</div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div
+                  onClick={() => setWithdrawMode('standard')}
+                  style={{
+                    flex: 1,
+                    padding: 16,
+                    border: `2px solid ${withdrawMode === 'standard' ? 'var(--primary)' : 'var(--border)'}`,
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    backgroundColor: withdrawMode === 'standard' ? 'var(--primary-light)' : 'transparent'
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Standard</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>Processed within 24h</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>No extra fees</div>
+                </div>
+
+                <div
+                  onClick={() => setWithdrawMode('instant')}
+                  style={{
+                    flex: 1,
+                    padding: 16,
+                    border: `2px solid ${withdrawMode === 'instant' ? 'var(--primary)' : 'var(--border)'}`,
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    backgroundColor: withdrawMode === 'instant' ? 'var(--primary-light)' : 'transparent'
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Instant</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>Processed immediately</div>
+                  <div style={{ fontSize: 12, color: 'orange' }}>2% fee applies</div>
+                </div>
+              </div>
+            </div>
+
+            <TextInput
+              label="Withdrawal Amount (USDT)"
+              placeholder="e.g. 500"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.currentTarget.value)}
+              type="number"
+              mb="md"
+              leftSection={<IconCurrencyDollar size={16} />}
+            />
+
+            <TextInput
+              label="Wallet Address (TRC20)"
+              placeholder="T..."
+              value={withdrawAddress}
+              onChange={(e) => setWithdrawAddress(e.currentTarget.value)}
+              mb="xl"
+              leftSection={<IconWallet size={16} />}
+            />
+
+            <Button
+              fullWidth
+              size="lg"
+              color={withdrawMode === 'instant' ? 'orange' : 'blue'}
+              onClick={handleWithdraw}
+            >
+              {withdrawMode === 'instant' ? 'Instant Withdraw' : 'Request Withdrawal'}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

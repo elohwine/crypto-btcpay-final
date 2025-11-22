@@ -13,12 +13,12 @@ export class DepositsController {
     private btcpayService: BtcpayService,
     private tronService?: TronService,
     private ledgerService?: LedgerService,
-  ){}
+  ) { }
 
   @Post()
-  async create(@Body() body: any, @Req() req: any){
+  async create(@Body() body: any, @Req() req: any) {
     const { currency, amount, userId, walletAddress } = body;
-        // Prefer authenticated user id (req.user.sub) if available, fall back to provided userId or seed-user for dev
+    // Prefer authenticated user id (req.user.sub) if available, fall back to provided userId or seed-user for dev
     const authUserId = req?.user?.sub;
     const user = userId || authUserId || 'seed-user'; // replace with auth enforcement when ready
 
@@ -47,15 +47,15 @@ export class DepositsController {
     // Generate deposit ID first for orderId
     const depositId = randomUUID();
 
-  // Determine if BTCPay is enabled for this environment.
-  // Rules:
-  //  - If BTCPAY_ENABLED='true' -> enabled
-  //  - If BTCPAY_ENABLED='false' -> disabled
-  //  - Else: enabled only when creds present AND SKIP_BTCPAY !== 'true'
-  const explicit = (process.env.BTCPAY_ENABLED || '').toLowerCase();
-  const hasCreds = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID);
-  const skip = (process.env.SKIP_BTCPAY || '').toLowerCase() === 'true';
-  const btcpayEnabled = explicit === 'true' ? true : explicit === 'false' ? false : (hasCreds && !skip);
+    // Determine if BTCPay is enabled for this environment.
+    // Rules:
+    //  - If BTCPAY_ENABLED='true' -> enabled
+    //  - If BTCPAY_ENABLED='false' -> disabled
+    //  - Else: enabled only when creds present AND SKIP_BTCPAY !== 'true'
+    const explicit = (process.env.BTCPAY_ENABLED || '').toLowerCase();
+    const hasCreds = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID);
+    const skip = (process.env.SKIP_BTCPAY || '').toLowerCase() === 'true';
+    const btcpayEnabled = explicit === 'true' ? true : explicit === 'false' ? false : (hasCreds && !skip);
 
     // If currency is USDT and caller did not provide a destination wallet, try to derive
     // a destination. Prefer environment default in minimal mode; otherwise try store-configured
@@ -86,7 +86,7 @@ export class DepositsController {
         }
       }
     }
-    
+
     // create BTCPay invoice. Do NOT pass the user's walletAddress under a metadata key that plugins might use
     // as a payment destination. Store user-provided or resolved wallet in a non-actionable metadata field instead.
     const metadata = {
@@ -104,9 +104,9 @@ export class DepositsController {
         console.log(`[Deposits] BTCPay invoice creation result:`, JSON.stringify(invoice, null, 2));
         invoiceId = invoice?.data?.id || invoice?.id || null;
         checkout = invoice?.data?.checkoutLink || invoice?.checkoutLink || null;
-        
+
         console.log(`[Deposits] Extracted invoiceId: ${invoiceId}, checkout: ${checkout}`);
-        
+
         // Check if the created invoice is valid
         const invoiceStatus = invoice?.data?.status || invoice?.status;
         console.log(`[Deposits] Invoice status: ${invoiceStatus}`);
@@ -137,7 +137,7 @@ export class DepositsController {
       invoiceId = `local-fallback-${Date.now()}`;
       checkout = null;
     }
-  // Try to extract an explicit invoice-provided payment recipient (only from explicit fields).
+    // Try to extract an explicit invoice-provided payment recipient (only from explicit fields).
     // IMPORTANT: do not infer recipient by regex from the invoice JSON because metadata (customerWallet)
     // may contain the user's wallet and would be misinterpreted as the payment destination.
     let invoiceRecipient: string | null = null;
@@ -148,7 +148,7 @@ export class DepositsController {
     // recipient (safer than trusting caller-provided metadata). If neither is available, leave null
     // so the client shows the QR/manual flow.
     let walletToPersist: string | null = invoiceRecipient || null;
-    if(!walletToPersist && btcpayEnabled){
+    if (!walletToPersist && btcpayEnabled) {
       try {
         const status = await this.btcpayService.getStoreWalletAddressStatus(currency || 'USDT');
         if (status && status.address) {
@@ -160,7 +160,7 @@ export class DepositsController {
       } catch (e) { console.warn('[Deposits] failed to derive store wallet address', e?.message || e); }
     }
     // If still no wallet to persist, fall back to an environment-configured receiver (useful for testing/ops)
-    if(!walletToPersist){
+    if (!walletToPersist) {
       if (process.env.TRON_DEFAULT_RECEIVER) {
         walletToPersist = process.env.TRON_DEFAULT_RECEIVER;
         console.log(`[Deposits] using TRON_DEFAULT_RECEIVER fallback ${walletToPersist}`);
@@ -170,37 +170,37 @@ export class DepositsController {
         console.log(`[Deposits] using TRON_DEFAULT_RECEIVER fallback due to missing permission ${storePermissionMissing}`);
       }
     }
-  // debug log for visibility in container logs
-  console.log(`[Deposits] create -> user=${user} amount=${amount} currency=${currency} invoiceId=${invoiceId} walletRequested=${walletAddress} walletResolved=${resolvedWalletAddress} storePermissionMissing=${storePermissionMissing}`);
-    
+    // debug log for visibility in container logs
+    console.log(`[Deposits] create -> user=${user} amount=${amount} currency=${currency} invoiceId=${invoiceId} walletRequested=${walletAddress} walletResolved=${resolvedWalletAddress} storePermissionMissing=${storePermissionMissing}`);
+
     // persist deposit using Prisma client
-    const dep = await this.prisma.deposit.create({ 
-      data: { 
+    const dep = await this.prisma.deposit.create({
+      data: {
         id: depositId,
-        userId: user, 
-        invoiceId, 
-        amount: amount ? Number(amount) : 0.0, 
-        currency: currency || 'USDT', 
-        status: 'PENDING', 
+        userId: user,
+        invoiceId,
+        amount: amount ? Number(amount) : 0.0,
+        currency: currency || 'USDT',
+        status: 'PENDING',
         btcpayStatus: 'NEW',
         walletAddress: walletToPersist
-      } 
+      }
     });
     console.log(`[Deposits] persisted -> depositId=${dep.id} invoiceId=${invoiceId} status=${dep.status}`);
-    return { 
-      depositId: dep.id, 
-      paymentUrl: checkout, 
-      invoiceId, 
+    return {
+      depositId: dep.id,
+      paymentUrl: checkout,
+      invoiceId,
       walletAddress: walletToPersist,
       storePermissionMissing,
-      expiresAt: invoice?.data?.expirationTime || null 
+      expiresAt: invoice?.data?.expirationTime || null
     };
   }
 
   @Get(':id')
-  async getDeposit(@Param('id') id: string){
+  async getDeposit(@Param('id') id: string) {
     const dep = await this.prisma.deposit.findUnique({ where: { id } });
-    if(!dep) return { error: 'not found' };
+    if (!dep) return { error: 'not found' };
     return {
       depositId: dep.id,
       invoiceId: dep.invoiceId,
@@ -215,33 +215,33 @@ export class DepositsController {
   }
 
   @Post('direct')
-  async direct(@Body() body: any, @Req() req: any){
+  async direct(@Body() body: any, @Req() req: any) {
     const { txHash, contract, toAddress, amount, userId } = body;
     const authUserId = req?.user?.sub;
     const user = userId || authUserId || 'seed-user';
-    if(!txHash) return { error: 'txHash required' };
+    if (!txHash) return { error: 'txHash required' };
     console.log(`[Deposits] direct -> tx=${txHash} user=${user} contract=${contract} to=${toAddress} amount=${amount}`);
 
     // idempotency: check if txHash already recorded
-  const existingByTx = await this.prisma.deposit.findFirst({ where: { txHash } as any } as any);
-    if(existingByTx){
+    const existingByTx = await this.prisma.deposit.findFirst({ where: { txHash } as any } as any);
+    if (existingByTx) {
       console.log(`[Deposits] direct -> already processed tx=${txHash} depositId=${existingByTx.id}`);
       return { ok: true, depositId: existingByTx.id, status: existingByTx.status };
     }
 
     // verify tx on TRON
-    if(!this.tronService) return { error: 'TronService not available' };
+    if (!this.tronService) return { error: 'TronService not available' };
     const verified = await this.tronService.verifyTx(txHash);
-    if(!verified || !verified.ok) return { error: 'tx not found or invalid', detail: verified?.raw };
+    if (!verified || !verified.ok) return { error: 'tx not found or invalid', detail: verified?.raw };
 
     // check recipient and contract if provided
     const txTo = verified.to || verified.raw?.to || null;
     const txContract = verified.contract || verified.raw?.token_address || null;
     const txAmount = verified.amount || (verified.raw?.amount ? Number(verified.raw.amount) : null);
-    if(contract && txContract && contract.toLowerCase() !== txContract.toLowerCase()){
+    if (contract && txContract && contract.toLowerCase() !== txContract.toLowerCase()) {
       return { error: 'contract mismatch', txContract };
     }
-    if(toAddress && txTo && toAddress !== txTo){
+    if (toAddress && txTo && toAddress !== txTo) {
       return { error: 'recipient mismatch', txTo };
     }
 
@@ -277,7 +277,7 @@ export class DepositsController {
         console.log(`[Deposits] direct -> matched deposit id=${match.id}, invoiceId=${match.invoiceId}, createdAt=${match.createdAt}, amount=${match.amount}`);
         dep = await this.prisma.deposit.update({ where: { id: match.id }, data: { txHash, status: 'CONFIRMED', btcpayStatus: 'ONCHAIN', confirmedAt: new Date(), amount: amount ? Number(amount) : (txAmount ? Number(txAmount) : match.amount) } as any });
         console.log(`[Deposits] direct -> reconciled pending deposit id=${dep.id} tx=${txHash} amount=${dep.amount}`);
-        
+
         // Auto-settle BTCPay invoice for verified on-chain transactions
         // This maintains unified accounting where all payments are tracked via BTCPay invoices
         // Debug: log the stored invoiceId so we can see why settlement may be skipped
@@ -289,7 +289,7 @@ export class DepositsController {
           // Verify the invoice actually exists on BTCPay before attempting settlement
           console.log(`[Deposits] verifying BTCPay invoice ${dep.invoiceId} before settlement`);
           let invoiceObj = null;
-          try { invoiceObj = await this.btcpayService.getInvoice(dep.invoiceId); } catch(e){ console.warn('[Deposits] getInvoice error', e?.message || e); }
+          try { invoiceObj = await this.btcpayService.getInvoice(dep.invoiceId); } catch (e) { console.warn('[Deposits] getInvoice error', e?.message || e); }
 
           // If invoice not found on BTCPay, attempt to locate a matching invoice via recent webhook events payloads stored in DB
           if (!invoiceObj) {
@@ -306,7 +306,7 @@ export class DepositsController {
             }
             if (foundId) {
               console.log(`[Deposits] found invoice id in webhook payload: ${foundId} — using it for settlement attempt`);
-              invoiceObj = await this.btcpayService.getInvoice(foundId).catch(()=>null);
+              invoiceObj = await this.btcpayService.getInvoice(foundId).catch(() => null);
               if (invoiceObj) dep.invoiceId = foundId; // update to the correct id
             }
           }
@@ -320,17 +320,17 @@ export class DepositsController {
             } else {
               console.log(`[Deposits] settling BTCPay invoice ${dep.invoiceId} for verified on-chain tx ${txHash}`);
               const settleResult = await this.btcpayService.settleInvoice(dep.invoiceId, 'Settled', true);
-          if (settleResult.error) {
-            // For on-chain verified transactions, settlement failure is not critical
-            // The deposit is already confirmed and ledger entries posted
-            if (settleResult.error.includes('Invalid invoice')) {
-              console.log(`[Deposits] BTCPay invoice ${dep.invoiceId} is invalid (creation failed), but on-chain tx is verified - proceeding`);
-            } else {
-              console.warn(`[Deposits] failed to settle BTCPay invoice ${dep.invoiceId}:`, settleResult.error);
-            }
-          } else {
-            console.log(`[Deposits] BTCPay invoice ${dep.invoiceId} settled successfully for on-chain payment`);
-          }
+              if (settleResult.error) {
+                // For on-chain verified transactions, settlement failure is not critical
+                // The deposit is already confirmed and ledger entries posted
+                if (settleResult.error.includes('Invalid invoice')) {
+                  console.log(`[Deposits] BTCPay invoice ${dep.invoiceId} is invalid (creation failed), but on-chain tx is verified - proceeding`);
+                } else {
+                  console.warn(`[Deposits] failed to settle BTCPay invoice ${dep.invoiceId}:`, settleResult.error);
+                }
+              } else {
+                console.log(`[Deposits] BTCPay invoice ${dep.invoiceId} settled successfully for on-chain payment`);
+              }
             }
           }
         } else if (dep.invoiceId?.startsWith('local-fallback-')) {
@@ -348,7 +348,7 @@ export class DepositsController {
       }
     } catch (e) { console.warn('[Deposits] matching deposit lookup failed', e?.message || e); }
 
-    if(!dep){
+    if (!dep) {
       // create Deposit and mark confirmed
       const depData = {
         userId: user,
@@ -366,11 +366,49 @@ export class DepositsController {
     }
 
     // post ledger entries
-    if(this.ledgerService){
+    if (this.ledgerService) {
       const decimals = Number(process.env.TRON_USDT_DECIMALS || 6);
       const minor = Math.round((dep.amount || 0) * Math.pow(10, decimals));
       await this.ledgerService.post(null, `Assets:Custody:${dep.currency}`, BigInt(minor), dep.currency, 'deposit', dep.id);
       await this.ledgerService.post(dep.userId, `Liabilities:User:${dep.userId}:${dep.currency}`, BigInt(-minor), dep.currency, 'deposit', dep.id);
+
+      // Check if this is the user's first confirmed deposit and apply 10% welcome bonus
+      try {
+        const confirmedDeposits = await this.prisma.deposit.count({
+          where: {
+            userId: dep.userId,
+            status: 'CONFIRMED'
+          }
+        });
+
+        if (confirmedDeposits === 1) { // This is the first confirmed deposit
+          const bonusAmount = Math.round(minor * 0.1); // 10% bonus
+          console.log(`[Deposits] Applying 10% welcome bonus for user ${dep.userId}: ${bonusAmount} minor units`);
+
+          // Credit the bonus to the user's account
+          await this.ledgerService.post(
+            dep.userId,
+            `Liabilities:User:${dep.userId}:${dep.currency}`,
+            BigInt(-bonusAmount),
+            dep.currency,
+            'welcome_bonus',
+            dep.id
+          );
+
+          // Debit from a bonus expense account
+          await this.ledgerService.post(
+            null,
+            `Expenses:Bonuses:Welcome`,
+            BigInt(bonusAmount),
+            dep.currency,
+            'welcome_bonus',
+            dep.id
+          );
+        }
+      } catch (bonusError) {
+        console.error('[Deposits] Failed to apply welcome bonus:', bonusError?.message || bonusError);
+        // Don't fail the deposit if bonus application fails
+      }
     }
 
     const network = process.env.TRON_NETWORK || (process.env.TRON_PROVIDER_URL && process.env.TRON_PROVIDER_URL.includes('shasta') ? 'shasta' : 'mainnet');
@@ -380,15 +418,15 @@ export class DepositsController {
   }
 
   @Get('public')
-  async publicList(){
+  async publicList() {
     // return recent deposits for public display (no sensitive user fields)
     const rows = await this.prisma.deposit.findMany({ take: 100, orderBy: { createdAt: 'desc' }, select: { id: true, invoiceId: true, amount: true, currency: true, status: true, createdAt: true, txHash: true } });
-    return rows.map(r=>({ depositId: r.id, invoiceId: r.invoiceId, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash }));
+    return rows.map(r => ({ depositId: r.id, invoiceId: r.invoiceId, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash }));
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async myDeposits(@Req() req: any){
+  async myDeposits(@Req() req: any) {
     const authUserId = req?.user?.sub;
     const user = authUserId || 'seed-user';
     const rows = await this.prisma.deposit.findMany({ where: { userId: user }, orderBy: { createdAt: 'desc' }, select: { id: true, amount: true, currency: true, status: true, createdAt: true, txHash: true, invoiceId: true, walletAddress: true } });
@@ -398,7 +436,7 @@ export class DepositsController {
   // Prefer the concrete route before the param route so 
   // /store/current/tron-address is not captured by :storeId
   @Get('store/current/tron-address')
-  async getCurrentStoreTronAddress(){
+  async getCurrentStoreTronAddress() {
     try {
       const status = await this.btcpayService.getStoreWalletAddressStatus('USDT');
       if (status) {
@@ -418,7 +456,7 @@ export class DepositsController {
   }
 
   @Get('store/:storeId/tron-address')
-  async getStoreTronAddress(@Param('storeId') storeId: string){
+  async getStoreTronAddress(@Param('storeId') storeId: string) {
     // route guard: if client calls /store/current/tron-address, delegate to the explicit handler
     if (storeId === 'current') return this.getCurrentStoreTronAddress();
     try {
@@ -439,7 +477,7 @@ export class DepositsController {
   // Temporary admin endpoint: reconcile existing deposits that used local-fallback invoice ids
   // Scans recent webhook events to find a matching real invoice id, persists it, and attempts settlement.
   @Get('reconcile/local-fallbacks')
-  async reconcileLocalFallbacks(){
+  async reconcileLocalFallbacks() {
     try {
       const rows = await this.prisma.deposit.findMany({ where: { invoiceId: { startsWith: 'local-fallback-' } as any }, take: 200 });
       const results: any[] = [];
@@ -478,7 +516,7 @@ export class DepositsController {
             continue;
           }
           console.log(`[Deposits][reconcile] found invoice id ${foundId} for deposit ${d.id}`);
-          const invoiceObj = await this.btcpayService.getInvoice(foundId).catch(()=>null);
+          const invoiceObj = await this.btcpayService.getInvoice(foundId).catch(() => null);
           if (!invoiceObj) { results.push({ depositId: d.id, resolved: false, foundId, note: 'btcpay getInvoice missing' }); continue; }
           await this.prisma.deposit.update({ where: { id: d.id }, data: { invoiceId: foundId } as any });
           const settleResult = await this.btcpayService.settleInvoice(foundId, 'Settled', true);

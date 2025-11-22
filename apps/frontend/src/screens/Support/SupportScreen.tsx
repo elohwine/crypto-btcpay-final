@@ -14,6 +14,8 @@ import {
     Box,
     useMantineTheme,
     useMantineColorScheme,
+    TextInput,
+    Textarea,
 } from "@mantine/core";
 import {
     IconBrandWhatsapp,
@@ -220,6 +222,38 @@ const SupportScreen: React.FC = () => {
                                 Join Telegram
                             </Button>
                         </Group>
+                    </Card>
+
+                    {/* Request Callback Form */}
+                    <Card shadow="md" padding="xl" radius="lg">
+                        <Title order={3} mb="md">Request a Callback</Title>
+                        <Text c="dimmed" mb="lg">
+                            Can't chat right now? Leave your details and we'll get back to you as soon as possible.
+                        </Text>
+                        <form onSubmit={(e) => e.preventDefault()}>
+                            <Stack gap="md">
+                                <Grid>
+                                    <Grid.Col span={{ base: 12, md: 6 }}>
+                                        <TextInput label="Your Name" placeholder="John Doe" required />
+                                    </Grid.Col>
+                                    <Grid.Col span={{ base: 12, md: 6 }}>
+                                        <TextInput label="Email Address" placeholder="john@example.com" required type="email" />
+                                    </Grid.Col>
+                                    <Grid.Col span={{ base: 12, md: 6 }}>
+                                        <TextInput label="Phone Number" placeholder="+1 234 567 8900" />
+                                    </Grid.Col>
+                                    <Grid.Col span={{ base: 12, md: 6 }}>
+                                        <TextInput label="Subject" placeholder="Investment Inquiry" />
+                                    </Grid.Col>
+                                </Grid>
+                                <Textarea label="Message" placeholder="How can we help you?" minRows={3} required />
+                                <Group justify="flex-end">
+                                    <Button type="submit" size="md" color={theme.primaryColor}>
+                                        Submit Request
+                                    </Button>
+                                </Group>
+                            </Stack>
+                        </form>
                     </Card>
                 </Stack>
             </Container>

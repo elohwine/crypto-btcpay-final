@@ -10,6 +10,7 @@ import { DepositsModule } from './modules/deposits/deposits.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { HealthModule } from './modules/health/health.module';
     WebhooksModule,
     AdminModule,
     HealthModule,
+    ChatModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

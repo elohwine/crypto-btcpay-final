@@ -17,7 +17,7 @@ interface NavItem {
 const navItems: NavItem[] = [
     {
         label: "Home",
-        getPath: (auth) => (auth ? "/dashboard" : "/"),
+        getPath: (auth) => (auth ? "/plans" : "/"),
     },
     {
         label: "Investments",

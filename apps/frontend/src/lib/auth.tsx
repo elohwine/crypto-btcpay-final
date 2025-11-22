@@ -13,7 +13,8 @@ type AuthContextValue = {
     password: string,
     name?: string,
     dateOfBirth?: string,
-    phone?: string
+    phone?: string,
+    referralCode?: string
   ) => Promise<void>;
   signout: () => void;
 };
@@ -40,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const raw = localStorage.getItem("user");
         setUser(raw ? JSON.parse(raw) : null);
-      } catch (e) {}
+      } catch (e) { }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -78,7 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     password: string,
     name?: string,
     dateOfBirth?: string,
-    phone?: string
+    phone?: string,
+    referralCode?: string
   ) => {
     loader.show("Signing up...");
     try {
@@ -88,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         name,
         dateOfBirth,
         phone,
+        referralCode,
       });
       const data = res.data;
       if (data && data.accessToken) {

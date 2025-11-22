@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Navbar from "../components/Navbar/Navbar";
 import UnifiedHeader from "../components/UnifiedHeader/UnifiedHeader";
+import SupportWidget from "../components/Support/SupportWidget";
 import { Box, useMantineColorScheme, useMantineTheme, Group, Text, Anchor, Drawer, Burger } from "@mantine/core";
 import { useAuth } from "../lib/auth";
 import { IconBrandWhatsapp, IconBrandTelegram } from "@tabler/icons-react";
@@ -113,6 +114,7 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
         </Group>
         <Text size="sm" ta="center">© {new Date().getFullYear()} Magnum. All rights reserved.</Text>
       </Box>
+      <SupportWidget />
     </>
   );
 };

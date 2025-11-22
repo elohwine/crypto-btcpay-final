@@ -29,7 +29,6 @@ import {
 } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 import TopLayout from "../../layouts/TopLayout";
-import Header from "../../components/Header/Header";
 import PlanCard from "../../components/PlanCard/PlanCard";
 import { INVESTMENT_PLANS } from "../../types/investment";
 
@@ -39,7 +38,7 @@ const AboutScreen: React.FC = () => {
   const isDark = (theme as any).colorScheme === "dark";
 
   return (
-  <TopLayout>
+    <TopLayout>
       <div
         style={{
           padding: "12px",
@@ -48,7 +47,6 @@ const AboutScreen: React.FC = () => {
           boxSizing: "border-box",
         }}
       >
-        <Header title="About Magnum" icon="info" />
 
         {/* Introduction */}
         <Card shadow="sm" padding="xl" radius="md" mb="xl">
@@ -457,7 +455,7 @@ const AboutScreen: React.FC = () => {
           </Stack>
         </Card>
       </div>
-  </TopLayout>
+    </TopLayout>
   );
 };
 

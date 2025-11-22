@@ -10,21 +10,33 @@ export class AuthService {
   constructor(
     @Inject('PRISMA') private prisma: PrismaClient,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async signup(dto: SignupDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
       throw new HttpException('Email already registered', HttpStatus.BAD_REQUEST);
     }
+
+    let referredBy: string | undefined = undefined;
+    if (dto.referralCode) {
+      const referrer = await this.prisma.user.findUnique({ where: { referralCode: dto.referralCode } });
+      if (referrer) {
+        referredBy = referrer.id;
+      }
+    }
+
     const hashed = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({ data: { 
-      email: dto.email, 
-      password: hashed, 
-      name: dto.name,
-      dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
-      phone: dto.phone
-    } });
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        password: hashed,
+        name: dto.name,
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+        phone: dto.phone,
+        referredBy
+      }
+    });
     const tokens = await this.getTokens(user.id, user.email);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
     return { user: { id: user.id, email: user.email, name: user.name, dateOfBirth: user.dateOfBirth, phone: user.phone }, ...tokens };
