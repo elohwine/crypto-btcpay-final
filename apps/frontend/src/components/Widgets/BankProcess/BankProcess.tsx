@@ -227,7 +227,13 @@ const BankProcess: React.FC = () => {
     try {
       const res = await api.get("/deposits/public");
       if (res && res.data) {
-        setPublicList(res.data || []);
+        // Ensure data is an array to prevent .map() crashes
+        if (Array.isArray(res.data)) {
+          setPublicList(res.data);
+        } else {
+          console.warn("Public deposits list is not an array:", res.data);
+          setPublicList([]);
+        }
       }
     } catch (e) {
       // ignore
