@@ -7,7 +7,7 @@ import NavbarButton from "./NavbarButton";
 const Navbar: React.FC = () => {
   const { user } = useAuth();
   return (
-    <nav className="navbar-inner no-select">
+    <nav className="navbar-inner no-select" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="logo">
         <Link to="/market">
           <img
@@ -41,9 +41,6 @@ const Navbar: React.FC = () => {
           />
         </li>
         <li>
-          <NavbarButton url="/transactions" icon="sync" title="Transactions" />
-        </li>
-        <li>
           <NavbarButton
             url="/dashboard"
             icon="dashboard"
@@ -63,12 +60,11 @@ const Navbar: React.FC = () => {
             title="My profile"
           />
         </li>
-        <li>
-          <NavbarButton url="/admin" icon="admin_panel_settings" title="Admin" />
-        </li>
-        <li>
-          <NavbarButton url="/contacts" icon="contacts" title="Addresses" />
-        </li>
+        {user?.role === 'ADMIN' && (
+          <li>
+            <NavbarButton url="/admin" icon="admin_panel_settings" title="Admin" />
+          </li>
+        )}
         <li>
           <NavbarButton url="/messages" icon="chat" title="Messages" />
         </li>
@@ -76,16 +72,10 @@ const Navbar: React.FC = () => {
           <NavbarButton url="/settings" icon="settings" title="Settings" />
         </li>
       </ul>
-      <div className="copyright">
+      <div className="copyright" style={{ marginTop: 'auto' }}>
         <strong>Magnum</strong>
         <p>
           {new Date().getFullYear()} &copy; All rights reserved.
-          <br />
-          <br />
-          Made with <span>❤</span> by{" "}
-          <a target="_blank" rel="noreferrer" href="https://www.cenksari.com">
-            Cenk SARI
-          </a>
         </p>
       </div>
     </nav>

@@ -81,6 +81,10 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
               content: {
                 background: isDark ? theme.colors.dark[7] : "white",
               },
+              body: {
+                height: "100%",
+                padding: 0,
+              },
             }}
           >
             <Navbar />

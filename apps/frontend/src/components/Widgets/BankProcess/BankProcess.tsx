@@ -925,11 +925,31 @@ const BankProcess: React.FC = () => {
                       marginBottom: 16,
                     }}
                   >
-                    <QRWithLogo
-                      data={qrValue}
-                      logoSrc={getLogoDataUrl(currencySelected) || undefined}
-                      size={200}
-                    />
+                    {qrValue ? (
+                      <QRWithLogo
+                        data={qrValue}
+                        logoSrc={getLogoDataUrl(currencySelected) || undefined}
+                        size={200}
+                      />
+                    ) : (
+                      <div style={{
+                        width: 200,
+                        height: 200,
+                        background: 'rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 12,
+                        border: '1px dashed var(--muted)'
+                      }}>
+                        <div style={{ textAlign: 'center', padding: 16 }}>
+                          <div style={{ fontSize: 24, marginBottom: 8 }}>⚠️</div>
+                          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                            Address not available.<br />Please contact support.
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div
                       style={{
                         marginTop: 12,

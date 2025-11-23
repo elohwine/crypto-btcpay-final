@@ -30,12 +30,15 @@ const QRWithLogo: React.FC<Props> = ({
       margin: 8,
       type,
       image: logoSrc || undefined,
+      backgroundOptions: {
+        color: "#ffffff",
+      },
       dotsOptions: {
-        color: primary || "var(--text)",
+        color: "#000000",
         type: "rounded",
       },
       cornersSquareOptions: {
-        color: primary || "var(--text)",
+        color: "#000000",
         type: "extra-rounded",
       },
       imageOptions: {
@@ -73,8 +76,9 @@ const QRWithLogo: React.FC<Props> = ({
         width: size,
         height: size,
         imageOptions: { imageSize },
-        dotsOptions: { color: primary || "var(--text)" },
-        cornersSquareOptions: { color: primary || "var(--text)" },
+        backgroundOptions: { color: "#ffffff" },
+        dotsOptions: { color: "#000000" },
+        cornersSquareOptions: { color: "#000000" },
       });
     } catch (e) {
       // ignore update errors

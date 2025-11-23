@@ -106,7 +106,7 @@ const LandingPage: React.FC = () => {
                 size="xl"
                 radius="md"
                 component={Link}
-                to="/members/signup"
+                to="/plans"
                 color={theme.primaryColor}
               >
                 Get Started

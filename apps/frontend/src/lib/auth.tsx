@@ -3,7 +3,7 @@ import api from "./api";
 import { notify } from "../ui/notifications/notify";
 import { loader } from "../ui/loading/loaderContext";
 
-type User = { id: string; email: string; name?: string } | null;
+type User = { id: string; email: string; name?: string; role?: string } | null;
 
 type AuthContextValue = {
   user: User;
@@ -17,6 +17,7 @@ type AuthContextValue = {
     referralCode?: string
   ) => Promise<void>;
   signout: () => void;
+  logout: () => void;
 };
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
@@ -133,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <AuthContext.Provider value={{ user, signin, signup, signout }}>
+    <AuthContext.Provider value={{ user, signin, signup, signout, logout: signout }}>
       {children}
     </AuthContext.Provider>
   );

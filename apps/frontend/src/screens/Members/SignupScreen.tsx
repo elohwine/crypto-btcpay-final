@@ -279,7 +279,7 @@ const SignupScreen: React.FC = () => {
                     <div className="form-line">
                       <div className="center">
                         <p>
-                          Do you have an account? <Link to="/">Sign in</Link>.
+                          Do you have an account? <Link to="/members/signin">Sign in</Link>.
                         </p>
                       </div>
                     </div>
