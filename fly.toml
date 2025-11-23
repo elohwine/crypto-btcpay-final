@@ -13,8 +13,8 @@ primary_region = "iad"
   API_PORT = "3001"
   BTCPAY_ENABLED = "false"
   SKIP_BTCPAY = "true"
-  TRON_NETWORK = "shasta"
-  TRON_PROVIDER_URL = "https://api.shasta.trongrid.io"
+  TRON_NETWORK = "mainnet"
+  TRON_PROVIDER_URL = "https://api.trongrid.io"
   TRON_USDT_DECIMALS = "6"
 
 [http_service]

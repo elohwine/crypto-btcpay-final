@@ -16,11 +16,11 @@ const UserMenu: React.FC = () => {
 
     return (
         <Group gap="xs">
-            <Tooltip label="Investments" withArrow>
+            <Tooltip label="Plans" withArrow>
                 <ActionIcon
                     variant="subtle"
                     size="lg"
-                    onClick={() => navigate("/capital")}
+                    onClick={() => navigate("/plans")}
                 >
                     <IconChartLine size={20} />
                 </ActionIcon>
@@ -43,7 +43,7 @@ const UserMenu: React.FC = () => {
                     </Menu.Item>
                     <Menu.Item
                         leftSection={<IconChartLine size={14} />}
-                        onClick={() => navigate("/capital")}
+                        onClick={() => navigate("/plans")}
                     >
                         Investments
                     </Menu.Item>

@@ -26,14 +26,46 @@ import {
 import TopLayout from '../../layouts/TopLayout';
 import { useAppTheme } from '../../lib/themeUtils';
 import { useAuth } from '../../lib/auth';
+import api from '../../lib/api';
 
 const WalletScreen: React.FC = () => {
     const { primary } = useAppTheme();
     const { user } = useAuth();
+    const [balance, setBalance] = React.useState<number>(0);
+    const [transactions, setTransactions] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState<boolean>(true);
+    const [walletAddress, setWalletAddress] = React.useState<string>('');
 
-    // Placeholder wallet address
-    const walletAddress = 'TXYZabc123def456ghi789jkl012mno345pqr678';
-    const balance = 1250.50;
+    React.useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                // Fetch balance
+                const balanceRes = await api.get('/deposits/balance');
+                if (balanceRes.data && balanceRes.data.balances) {
+                    const usdt = balanceRes.data.balances.find((b: any) => b.currency === 'USDT');
+                    setBalance(usdt ? usdt.amount : 0);
+                }
+
+                // Fetch transactions
+                const txRes = await api.get('/deposits/me');
+                if (txRes.data) {
+                    setTransactions(txRes.data);
+                    // Try to find a wallet address from history if available
+                    const withAddress = txRes.data.find((tx: any) => tx.walletAddress);
+                    if (withAddress) setWalletAddress(withAddress.walletAddress);
+                }
+            } catch (error) {
+                console.error('Failed to fetch wallet data', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user) {
+            fetchData();
+        }
+    }, [user]);
 
     return (
         <TopLayout>
@@ -71,46 +103,48 @@ const WalletScreen: React.FC = () => {
                     </Stack>
                 </Card>
 
-                {/* Wallet Address */}
-                <Card shadow="md" padding="xl" radius="lg" mb="xl">
-                    <Stack gap="md">
-                        <Group justify="space-between">
-                            <Text fw={600} size="lg">
-                                Wallet Address
-                            </Text>
-                            <Button leftSection={<IconQrcode size={18} />} variant="light">
-                                Show QR
-                            </Button>
-                        </Group>
-                        <Group gap="xs">
-                            <Text
-                                size="sm"
-                                c="dimmed"
-                                style={{
-                                    fontFamily: 'monospace',
-                                    wordBreak: 'break-all',
-                                    flex: 1,
-                                }}
-                            >
-                                {walletAddress}
-                            </Text>
-                            <CopyButton value={walletAddress}>
-                                {({ copied, copy }) => (
-                                    <Tooltip label={copied ? 'Copied' : 'Copy'}>
-                                        <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
-                                            {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                                        </ActionIcon>
-                                    </Tooltip>
-                                )}
-                            </CopyButton>
-                        </Group>
-                    </Stack>
-                </Card>
+                {/* Wallet Address - Only show if we have one */}
+                {walletAddress && (
+                    <Card shadow="md" padding="xl" radius="lg" mb="xl">
+                        <Stack gap="md">
+                            <Group justify="space-between">
+                                <Text fw={600} size="lg">
+                                    Wallet Address
+                                </Text>
+                                <Button leftSection={<IconQrcode size={18} />} variant="light">
+                                    Show QR
+                                </Button>
+                            </Group>
+                            <Group gap="xs">
+                                <Text
+                                    size="sm"
+                                    c="dimmed"
+                                    style={{
+                                        fontFamily: 'monospace',
+                                        wordBreak: 'break-all',
+                                        flex: 1,
+                                    }}
+                                >
+                                    {walletAddress}
+                                </Text>
+                                <CopyButton value={walletAddress}>
+                                    {({ copied, copy }) => (
+                                        <Tooltip label={copied ? 'Copied' : 'Copy'}>
+                                            <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
+                                                {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    )}
+                                </CopyButton>
+                            </Group>
+                        </Stack>
+                    </Card>
+                )}
 
                 {/* Quick Actions */}
                 <Grid mb="xl">
                     <Grid.Col span={{ base: 12, sm: 6 }}>
-                        <Card shadow="sm" padding="xl" radius="lg" style={{ cursor: 'pointer' }}>
+                        <Card shadow="sm" padding="xl" radius="lg" style={{ cursor: 'pointer' }} onClick={() => window.location.href = '/deposit'}>
                             <Stack align="center" gap="md">
                                 <ThemeIcon size={60} radius="xl" color="green">
                                     <IconArrowDownLeft size={28} />
@@ -147,38 +181,29 @@ const WalletScreen: React.FC = () => {
                         Recent Transactions
                     </Text>
                     <Stack gap="md">
-                        <Group justify="space-between">
-                            <Group>
-                                <ThemeIcon color="green" variant="light" size="lg">
-                                    <IconArrowDownLeft size={18} />
-                                </ThemeIcon>
-                                <Box>
-                                    <Text fw={500}>Deposit</Text>
-                                    <Text size="xs" c="dimmed">
-                                        Today, 10:30 AM
+                        {transactions.length === 0 ? (
+                            <Text c="dimmed" ta="center" py="xl">No transactions yet</Text>
+                        ) : (
+                            transactions.map((tx: any) => (
+                                <Group key={tx.depositId} justify="space-between">
+                                    <Group>
+                                        <ThemeIcon color={tx.amount > 0 ? "green" : "red"} variant="light" size="lg">
+                                            {tx.amount > 0 ? <IconArrowDownLeft size={18} /> : <IconArrowUpRight size={18} />}
+                                        </ThemeIcon>
+                                        <Box>
+                                            <Text fw={500}>{tx.amount > 0 ? 'Deposit' : 'Withdrawal'}</Text>
+                                            <Text size="xs" c="dimmed">
+                                                {new Date(tx.createdAt).toLocaleString()}
+                                            </Text>
+                                            <Badge size="xs" color={tx.status === 'CONFIRMED' ? 'green' : 'yellow'}>{tx.status}</Badge>
+                                        </Box>
+                                    </Group>
+                                    <Text fw={600} c={tx.amount > 0 ? "green" : "red"}>
+                                        {tx.amount > 0 ? '+' : ''}${Number(tx.amount).toFixed(2)}
                                     </Text>
-                                </Box>
-                            </Group>
-                            <Text fw={600} c="green">
-                                +$100.00
-                            </Text>
-                        </Group>
-                        <Group justify="space-between">
-                            <Group>
-                                <ThemeIcon color="red" variant="light" size="lg">
-                                    <IconArrowUpRight size={18} />
-                                </ThemeIcon>
-                                <Box>
-                                    <Text fw={500}>Withdrawal</Text>
-                                    <Text size="xs" c="dimmed">
-                                        Yesterday, 3:45 PM
-                                    </Text>
-                                </Box>
-                            </Group>
-                            <Text fw={600} c="red">
-                                -$50.00
-                            </Text>
-                        </Group>
+                                </Group>
+                            ))
+                        )}
                     </Stack>
                 </Card>
             </Container>

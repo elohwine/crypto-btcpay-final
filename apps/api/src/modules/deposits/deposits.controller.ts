@@ -433,6 +433,29 @@ export class DepositsController {
     return rows.map(r => ({ depositId: r.id, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash, invoiceId: r.invoiceId, walletAddress: r.walletAddress }));
   }
 
+  @Get('balance')
+  @UseGuards(JwtAuthGuard)
+  async myBalance(@Req() req: any) {
+    const authUserId = req?.user?.sub;
+    const user = authUserId || 'seed-user';
+    if (!this.ledgerService) return { error: 'LedgerService not available' };
+
+    const balances = await this.ledgerService.balanceByUser(user);
+    // balances is array of { currency, _sum: { deltaMinor } }
+    // Convert to major units
+    const decimals = Number(process.env.TRON_USDT_DECIMALS || 6);
+
+    const result = balances.map(b => {
+      const minor = b._sum.deltaMinor ? Number(b._sum.deltaMinor) : 0;
+      return {
+        currency: b.currency,
+        amount: minor / Math.pow(10, decimals)
+      };
+    });
+
+    return { balances: result };
+  }
+
   // Prefer the concrete route before the param route so 
   // /store/current/tron-address is not captured by :storeId
   @Get('store/current/tron-address')

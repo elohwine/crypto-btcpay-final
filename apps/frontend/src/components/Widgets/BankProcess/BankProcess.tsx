@@ -1060,7 +1060,7 @@ const BankProcess: React.FC = () => {
 
           <div style={{ padding: 16 }}>
             <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light" mb="lg">
-              Withdrawals are processed within 24 hours. Minimum withdrawal amount is $10.
+              Withdrawals are processed within 5 minutes. Minimum withdrawal amount is $10.
             </Alert>
 
             <div style={{ marginBottom: 24 }}>

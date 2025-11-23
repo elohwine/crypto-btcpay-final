@@ -83,7 +83,7 @@ const UnifiedHeader: React.FC<UnifiedHeaderProps> = ({
                         <Group gap="xl">
                             {/* Logo */}
                             <Link
-                                to={user ? "/dashboard" : "/"}
+                                to="/"
                                 style={{
                                     textDecoration: "none",
                                     display: "flex",

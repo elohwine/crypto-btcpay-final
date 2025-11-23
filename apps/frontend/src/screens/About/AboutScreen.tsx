@@ -178,47 +178,7 @@ const AboutScreen: React.FC = () => {
 
             <Divider />
 
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
-              <Card
-                padding="lg"
-                radius="md"
-                style={{
-                  background: isDark ? theme.colors.dark[6] : theme.colors.blue[0],
-                }}
-              >
-                <Stack align="center" gap="xs">
-                  <ThemeIcon size={50} radius="xl" color="blue">
-                    <IconClock size={24} />
-                  </ThemeIcon>
-                  <Text fw={700} size="lg">
-                    Monday
-                  </Text>
-                  <Badge variant="light" color="blue">
-                    Withdrawal Day
-                  </Badge>
-                </Stack>
-              </Card>
-
-              <Card
-                padding="lg"
-                radius="md"
-                style={{
-                  background: isDark ? theme.colors.dark[6] : theme.colors.cyan[0],
-                }}
-              >
-                <Stack align="center" gap="xs">
-                  <ThemeIcon size={50} radius="xl" color="cyan">
-                    <IconClock size={24} />
-                  </ThemeIcon>
-                  <Text fw={700} size="lg">
-                    Wednesday
-                  </Text>
-                  <Badge variant="light" color="cyan">
-                    Withdrawal Day
-                  </Badge>
-                </Stack>
-              </Card>
-
+            <SimpleGrid cols={{ base: 1, sm: 1 }} spacing="lg">
               <Card
                 padding="lg"
                 radius="md"
@@ -231,7 +191,7 @@ const AboutScreen: React.FC = () => {
                     <IconClock size={24} />
                   </ThemeIcon>
                   <Text fw={700} size="lg">
-                    Friday
+                    Everyday
                   </Text>
                   <Badge variant="light" color="green">
                     Withdrawal Day
@@ -258,8 +218,7 @@ const AboutScreen: React.FC = () => {
               </Group>
               <List size="sm" mt="xs" spacing="xs">
                 <List.Item>
-                  Submit your withdrawal request <strong>one day before</strong> the
-                  withdrawal day
+                  You can submit your withdrawal request <strong>anytime</strong> and it will be processed within 5 minutes
                 </List.Item>
                 <List.Item>
                   Minimum withdrawal amount is <strong>$5</strong>

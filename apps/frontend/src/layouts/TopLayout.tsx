@@ -87,7 +87,14 @@ const TopLayout: React.FC<IProps> = ({ children }) => {
               },
             }}
           >
-            <Navbar />
+            <div className="navbar" style={{
+              width: '100%',
+              height: '100%',
+              borderRight: 'none',
+              overflow: 'auto'
+            }}>
+              <Navbar />
+            </div>
           </Drawer>
         )}
       </>

@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Loader, Center, Text } from "@mantine/core";
+import api from "../../lib/api";
+import { Loader, Center, Text, Card, Group, Stack, Title as MantineTitle, ThemeIcon, Grid } from "@mantine/core";
+import { IconWallet, IconTrendingUp } from "@tabler/icons-react";
+import { useAuth } from "../../lib/auth";
+import { useAppTheme } from "../../lib/themeUtils";
 
 // components
 import TopLayout from "../../layouts/TopLayout";
@@ -22,15 +26,33 @@ interface ICrypto {
 }
 
 const CapitalScreen: React.FC = () => {
+  const { user } = useAuth();
+  const { primary } = useAppTheme();
   const [data, setData] = useState<ICrypto[]>([]);
   const [keyword, setKeyword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [userBalance, setUserBalance] = useState<number>(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
+        // Fetch User Balance if logged in
+        if (user) {
+          try {
+            const balanceRes = await api.get('/deposits/balance');
+            if (balanceRes.data && balanceRes.data.balances) {
+              const usdt = balanceRes.data.balances.find((b: any) => b.currency === 'USDT');
+              setUserBalance(usdt ? usdt.amount : 0);
+            }
+          } catch (e) {
+            console.error("Failed to fetch user balance", e);
+          }
+        }
+
+        // Fetch Market Data
         const response = await axios.get(
           "https://api.coingecko.com/api/v3/coins/markets",
           {
@@ -76,7 +98,7 @@ const CapitalScreen: React.FC = () => {
     // Refresh every 60 seconds
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   /**
    * Handles the search input value change.
@@ -105,6 +127,38 @@ const CapitalScreen: React.FC = () => {
         searchSubmit={handleSearchSubmit}
         searchOnChange={handleSearchValue}
       />
+
+      {/* User Portfolio Section */}
+      {user && (
+        <Grid mb={40} mt={20}>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group>
+                <ThemeIcon size="xl" radius="md" color={primary} variant="light">
+                  <IconWallet size={28} />
+                </ThemeIcon>
+                <Stack gap={0}>
+                  <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Capital</Text>
+                  <MantineTitle order={2}>${userBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</MantineTitle>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group>
+                <ThemeIcon size="xl" radius="md" color="green" variant="light">
+                  <IconTrendingUp size={28} />
+                </ThemeIcon>
+                <Stack gap={0}>
+                  <Text size="xs" c="dimmed" fw={700} tt="uppercase">Active Assets</Text>
+                  <Text fw={500}>USDT, BTC, ETH</Text>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
+      )}
 
       {loading ? (
         <Center style={{ height: 400 }}>
