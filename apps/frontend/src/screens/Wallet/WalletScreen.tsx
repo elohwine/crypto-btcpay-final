@@ -36,35 +36,58 @@ const WalletScreen: React.FC = () => {
     const [loading, setLoading] = React.useState<boolean>(true);
     const [walletAddress, setWalletAddress] = React.useState<string>('');
 
+
     React.useEffect(() => {
         const fetchData = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
-                // Fetch balance
-                const balanceRes = await api.get('/deposits/balance');
-                if (balanceRes.data && balanceRes.data.balances) {
-                    const usdt = balanceRes.data.balances.find((b: any) => b.currency === 'USDT');
-                    setBalance(usdt ? usdt.amount : 0);
+
+                // Fetch balance - handle errors gracefully
+                try {
+                    const balanceRes = await api.get('/deposits/balance');
+                    if (balanceRes.data && balanceRes.data.balances && Array.isArray(balanceRes.data.balances)) {
+                        const usdt = balanceRes.data.balances.find((b: any) => b.currency === 'USDT');
+                        setBalance(usdt && typeof usdt.amount === 'number' ? Math.abs(usdt.amount) : 0);
+                    } else {
+                        setBalance(0);
+                    }
+                } catch (balanceError: any) {
+                    console.error('Failed to fetch balance', balanceError);
+                    setBalance(0); // Default to 0 if balance fetch fails
                 }
 
-                // Fetch transactions
-                const txRes = await api.get('/deposits/me');
-                if (txRes.data) {
-                    setTransactions(txRes.data);
-                    // Try to find a wallet address from history if available
-                    const withAddress = txRes.data.find((tx: any) => tx.walletAddress);
-                    if (withAddress) setWalletAddress(withAddress.walletAddress);
+                // Fetch transactions - handle errors gracefully
+                try {
+                    const txRes = await api.get('/deposits/me');
+                    if (txRes.data && Array.isArray(txRes.data)) {
+                        setTransactions(txRes.data);
+                        // Try to find a wallet address from history if available
+                        const withAddress = txRes.data.find((tx: any) => tx.walletAddress);
+                        if (withAddress && withAddress.walletAddress) {
+                            setWalletAddress(withAddress.walletAddress);
+                        }
+                    } else {
+                        setTransactions([]);
+                    }
+                } catch (txError: any) {
+                    console.error('Failed to fetch transactions', txError);
+                    setTransactions([]); // Default to empty array if tx fetch fails
                 }
             } catch (error) {
-                console.error('Failed to fetch wallet data', error);
+                console.error('Unexpected error in wallet data fetch', error);
+                setBalance(0);
+                setTransactions([]);
             } finally {
                 setLoading(false);
             }
         };
 
-        if (user) {
-            fetchData();
-        }
+        fetchData();
     }, [user]);
 
     return (
