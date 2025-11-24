@@ -2,13 +2,25 @@ import { Injectable, Inject } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { SendMessageDto } from './dto/message.dto';
 import { knowledgeBase, classifyIntent } from './knowledge/intents';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class ChatService {
     constructor(@Inject('PRISMA') private prisma: PrismaClient) { }
 
     async sendMessage(dto: SendMessageDto) {
-        const { message, context } = dto;
+        const { message, context, sessionId } = dto;
+
+        // Save user message
+        await this.saveMessage({
+            userId: context.userId,
+            sessionId: sessionId || context.sessionId || 'anonymous',
+            message,
+            response: '', // User message has no response content
+            intent: null,
+            confidence: null,
+            type: 'user'
+        });
 
         // Classify the user's intent
         const intent = classifyIntent(message, context);
@@ -16,8 +28,13 @@ export class ChatService {
 
         // Handle escalation
         if (intent === 'escalate') {
-            return {
-                message: `I'm connecting you with our support team right now.
+            // Create support ticket
+            if (context.userId) {
+                await this.createSupportTicket(context.userId, message);
+            }
+
+            const response = {
+                message: `I'm connecting you with our support team right now. A ticket has been created for you.
 
 📧 **Support Channels:**
 • WhatsApp: +1 534 349 0641
@@ -32,6 +49,20 @@ A team member will assist you shortly!`,
                 intent,
                 confidence: 1.0,
             };
+
+            // Save bot response
+            await this.saveMessage({
+                userId: context.userId,
+                sessionId: sessionId || context.sessionId || 'anonymous',
+                message: '', // Bot response has no user message content in this row, but we track the flow
+                response: response.message,
+                intent,
+                confidence: 1.0,
+                escalated: true,
+                type: 'bot'
+            });
+
+            return response;
         }
 
         // Get response from knowledge base
@@ -73,23 +104,117 @@ A team member will assist you shortly!`,
         // Calculate confidence based on intent match
         const confidence = intent === 'unclear' ? 0.3 : 0.9;
 
-        return {
+        const response = {
             message: enhancedResponse,
             quickActions: knowledge.quickActions || [],
             intent,
             confidence,
         };
+
+        // Save bot response
+        await this.saveMessage({
+            userId: context.userId,
+            sessionId: sessionId || context.sessionId || 'anonymous',
+            message: '',
+            response: response.message,
+            intent,
+            confidence,
+            type: 'bot'
+        });
+
+        return response;
     }
 
     async getChatHistory(userId: string, limit: number = 50) {
-        // In a full implementation, you'd fetch from a ChatMessage table
-        // For now, return empty array as history is stored client-side
-        return [];
+        const messages = await this.prisma.chatMessage.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+        });
+
+        // Transform to frontend format
+        return messages.reverse().map(m => {
+            if (m.message) {
+                return {
+                    id: m.id,
+                    type: 'user',
+                    content: m.message,
+                    timestamp: m.createdAt,
+                };
+            } else {
+                return {
+                    id: m.id,
+                    type: 'bot',
+                    content: m.response,
+                    timestamp: m.createdAt,
+                    // We'd need to store quickActions in DB to return them here, 
+                    // but for history simple text is usually enough.
+                };
+            }
+        });
     }
 
     async submitFeedback(messageId: string, helpful: boolean) {
         // Store feedback for improving responses
         console.log(`[Chat] Feedback received: message=${messageId}, helpful=${helpful}`);
+        try {
+            await this.prisma.chatMessage.update({
+                where: { id: messageId },
+                data: { helpful }
+            });
+        } catch (e) {
+            // Ignore if message not found
+        }
         return { ok: true };
+    }
+
+    private async saveMessage(data: {
+        userId?: string;
+        sessionId: string;
+        message: string;
+        response: string;
+        intent: string | null;
+        confidence: number | null;
+        escalated?: boolean;
+        type: 'user' | 'bot';
+    }) {
+        // We use the same table for both, but the schema is designed for a request-response pair.
+        // However, to support the 'user' then 'bot' flow separately in the DB if desired,
+        // we can insert rows. The schema has 'message' and 'response'.
+        // For a user message, 'response' is empty. For bot, 'message' is empty (or we link them).
+        // To keep it simple and match the schema:
+
+        // If it's a user message, we just save it.
+        // If it's a bot message, we could update the previous user message or insert a new one.
+        // Given the schema structure (message AND response in one row implies a pair), 
+        // but the frontend sends them separately.
+        // Let's treat each row as an event.
+
+        await this.prisma.chatMessage.create({
+            data: {
+                userId: data.userId,
+                sessionId: data.sessionId,
+                message: data.type === 'user' ? data.message : '',
+                response: data.type === 'bot' ? data.response : '',
+                intent: data.intent,
+                confidence: data.confidence,
+                escalated: data.escalated || false,
+            }
+        });
+    }
+
+    private async createSupportTicket(userId: string, reason: string) {
+        // Fetch recent chat history for context
+        const history = await this.getChatHistory(userId, 10);
+
+        await this.prisma.supportTicket.create({
+            data: {
+                userId,
+                reason: reason || 'User requested support',
+                chatHistory: JSON.stringify(history),
+                status: 'open',
+                priority: 'normal'
+            }
+        });
     }
 }

@@ -30,6 +30,8 @@ model User {
   refreshTokens RefreshToken[]
   deposits      Deposit[]
   ledger        LedgerEntry[]
+  chatMessages  ChatMessage[]
+  supportTickets SupportTicket[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -79,4 +81,33 @@ model RefreshToken {
   expiresAt  DateTime
   revoked    Boolean  @default(false)
   createdAt  DateTime @default(now())
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  userId      String?
+  sessionId   String
+  message     String
+  response    String
+  intent      String?
+  confidence  Float?
+  escalated   Boolean  @default(false)
+  helpful     Boolean?
+  createdAt   DateTime @default(now())
+  
+  user        User?    @relation(fields: [userId], references: [id])
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String
+  chatHistory Json
+  reason      String
+  status      String   @default("open")
+  priority    String   @default("normal")
+  assignedTo  String?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  
+  user        User     @relation(fields: [userId], references: [id])
 }

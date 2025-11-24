@@ -41,28 +41,42 @@ export const ChatAssistantProvider: React.FC<{ children: React.ReactNode }> = ({
         sessionId,
     };
 
-    // Load chat history from localStorage
+    // Load chat history
     useEffect(() => {
-        const stored = localStorage.getItem('chat_history');
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                // Ensure parsed data is an array before mapping
-                if (Array.isArray(parsed)) {
-                    setMessages(parsed.map((m: any) => ({
-                        ...m,
-                        timestamp: new Date(m.timestamp)
-                    })));
-                } else {
-                    console.warn('Chat history is not an array, clearing...');
-                    localStorage.removeItem('chat_history');
+        const loadHistory = async () => {
+            if (user) {
+                try {
+                    const { data } = await api.get('/chat/history');
+                    if (Array.isArray(data)) {
+                        setMessages(data.map((m: any) => ({
+                            ...m,
+                            timestamp: new Date(m.timestamp)
+                        })));
+                    }
+                } catch (error) {
+                    console.error('Failed to load remote chat history', error);
                 }
-            } catch (e) {
-                console.error('Failed to load chat history', e);
-                localStorage.removeItem('chat_history');
+            } else {
+                // Fallback to local storage for guest users
+                const stored = localStorage.getItem('chat_history');
+                if (stored) {
+                    try {
+                        const parsed = JSON.parse(stored);
+                        if (Array.isArray(parsed)) {
+                            setMessages(parsed.map((m: any) => ({
+                                ...m,
+                                timestamp: new Date(m.timestamp)
+                            })));
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('chat_history');
+                    }
+                }
             }
-        }
-    }, []);
+        };
+
+        loadHistory();
+    }, [user]);
 
     // Save chat history to localStorage
     useEffect(() => {
