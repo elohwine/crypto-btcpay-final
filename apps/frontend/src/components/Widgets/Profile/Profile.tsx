@@ -136,7 +136,7 @@ const Profile: React.FC = () => {
                 (user as any)?.avatar ||
                 (user as any)?.picture ||
                 (user as any)?.image ||
-                "https://e7.pngegg.com/pngimages/799/987/png-clipart-computer-icons-avatar-icon-design-avatar-heroes-computer-wallpaper-thumbnail.png"
+                null
               }
               alt={user?.name || user?.email || "Guest"}
               title={user?.name || user?.email}

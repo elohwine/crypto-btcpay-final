@@ -9,16 +9,6 @@ interface IProps {
 }
 
 const MyAssetsRow: React.FC<IProps> = ({ item }) => {
-  const [color, setColor] = useState<string>("");
-
-  useEffect(() => {
-    if (item.status === 1) {
-      setColor("var(--success, green)");
-    } else {
-      setColor("var(--danger, red)");
-    }
-  }, [item.status]);
-
   return (
     <div className="assets-row flex flex-center flex-space-between">
       <div>
@@ -31,37 +21,16 @@ const MyAssetsRow: React.FC<IProps> = ({ item }) => {
         <strong>{item.name}</strong>
         <span>{item.symbol}</span>
       </div>
-      <div className="bar-chart responsive-hide2">
-        <Sparklines data={item.barChartData} width={40} height={40}>
-          <SparklinesBars
-            style={{
-              strokeWidth: 1,
-              stroke: "var(--primary-contrast, #ffffff)",
-              fill: color,
-            }}
-          />
-        </Sparklines>
-      </div>
-      <div className="standard-width">
+
+      <div className="standard-width" style={{ textAlign: 'right' }}>
         <strong>
           {item.amount} {item.currency}
         </strong>
-        <span>
-          <em className={color}>{item.change}</em>
-          {item.changePeriod}
-        </span>
       </div>
-      <div className="line-chart responsive-hide">
-        <Sparklines data={item.lineChartData} width={150} height={50}>
-          <SparklinesLine style={{ strokeWidth: 4 }} color={color} />
-        </Sparklines>
-      </div>
+
       <div className="nowrap no-select">
-        <Link to="/">
-          <i className="material-icons">visibility</i>
-        </Link>
-        <Link to="/">
-          <i className="material-icons">receipt</i>
+        <Link to="/deposit">
+          <i className="material-icons">add_circle</i>
         </Link>
       </div>
     </div>

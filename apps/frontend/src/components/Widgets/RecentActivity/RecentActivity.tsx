@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAppTheme } from "../../../lib/themeUtils";
+import api from "../../../lib/api";
+import { useAuth } from "../../../lib/auth";
+import { Loader, Center, Text } from "@mantine/core";
 
 // components
 import Box from "../../Common/Box";
@@ -8,101 +11,72 @@ import RecentActivityRow from "./RecentActivityRow";
 // interfaces
 interface IActivity {
   id: number;
-  type: number;
+  type: number; // 1: Deposit, 2: Withdrawal
   time: string;
   amount: string;
-  status: number;
+  status: number; // 1: Completed, 2: Pending, 3: Failed
   currency: string;
 }
 
-// variables
-const dataArray: IActivity[] = [
-  {
-    id: 1,
-    type: 1,
-    time: "06:25:57",
-    amount: "212,50",
-    currency: "TRY",
-    status: 1,
-  },
-  {
-    id: 2,
-    type: 1,
-    time: "08:30:25",
-    amount: "1.465,85",
-    currency: "TRY",
-    status: 1,
-  },
-  {
-    id: 3,
-    type: 2,
-    time: "09:16:11",
-    amount: "6.000,00",
-    currency: "TRY",
-    status: 2,
-  },
-  {
-    id: 4,
-    type: 1,
-    time: "12:05:03",
-    amount: "2.225,35",
-    currency: "TRY",
-    status: 1,
-  },
-  {
-    id: 5,
-    type: 1,
-    time: "14:46:53",
-    amount: "128,01",
-    currency: "TRY",
-    status: 3,
-  },
-  {
-    id: 6,
-    type: 2,
-    time: "18:01:03",
-    amount: "350,00",
-    currency: "TRY",
-    status: 2,
-  },
-];
-
 const RecentActivity: React.FC = () => {
   const [data, setData] = useState<IActivity[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const { primary } = useAppTheme();
+  const { user } = useAuth();
 
   useEffect(() => {
-    setData(dataArray);
-  }, []);
+    const fetchHistory = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        const res = await api.get('/deposits/me');
+
+        if (res.data && Array.isArray(res.data)) {
+          const mappedData: IActivity[] = res.data.map((item: any, index: number) => ({
+            id: index + 1,
+            type: item.amount > 0 ? 1 : 2,
+            time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            amount: Math.abs(item.amount).toFixed(2),
+            status: item.status === 'CONFIRMED' ? 1 : item.status === 'PENDING' ? 2 : 3,
+            currency: item.currency || 'USDT'
+          })).slice(0, 10); // Show last 10 items
+
+          setData(mappedData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch activity", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [user]);
 
   return (
     <Box>
       <div className="box-title box-vertical-padding box-horizontal-padding no-select">
         <div className="flex flex-center flex-space-between">
           <div>
-            <p>History</p>
+            <p>Recent Activity</p>
           </div>
-          <ul>
-            <li>
-              <button type="button">Yesterday</button>
-            </li>
-            <li>
-              <button
-                type="button"
-                className="active"
-                style={{ color: primary }}
-              >
-                Today
-              </button>
-            </li>
-          </ul>
         </div>
       </div>
       <div className="box-content">
-        {data &&
+        {loading ? (
+          <Center p="xl">
+            <Loader size="sm" />
+          </Center>
+        ) : data.length > 0 ? (
           data.map((item: IActivity) => (
             <RecentActivityRow key={item.id.toString()} item={item} />
-          ))}
+          ))
+        ) : (
+          <Center p="xl">
+            <Text c="dimmed" size="sm">No recent activity</Text>
+          </Center>
+        )}
       </div>
     </Box>
   );

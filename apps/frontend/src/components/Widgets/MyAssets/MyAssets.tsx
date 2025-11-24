@@ -51,6 +51,21 @@ const MyAssets: React.FC = () => {
 
   useClickOutside(ref, () => setMenuOpened(false));
 
+  const ASSET_METADATA: Record<string, any> = {
+    BTC: {
+      name: "Bitcoin",
+      icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/256/Bitcoin-BTC-icon.png",
+    },
+    ETH: {
+      name: "Ether",
+      icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Ethereum-ETH-icon.png",
+    },
+    USDT: {
+      name: "Tether",
+      icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Tether-USDT-icon.png",
+    }
+  };
+
   useEffect(() => {
     const fetchBalances = async () => {
       if (!user) return;
@@ -61,57 +76,31 @@ const MyAssets: React.FC = () => {
 
         if (res.data && res.data.balances) {
           const balances = res.data.balances;
+          const assets: ICrypto[] = [];
 
-          // Map API balances to ICrypto format
-          // Default assets structure
-          const assets: ICrypto[] = [
-            {
-              id: 1,
-              name: "Bitcoin",
-              symbol: "BTC",
-              icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/256/Bitcoin-BTC-icon.png",
-              amount: "0.0000",
-              currency: "BTC",
-              change: "0%",
-              changePeriod: "24h",
-              barChartData: [0, 0, 0, 0, 0],
-              lineChartData: [0, 0, 0, 0, 0],
-              status: 1,
-            },
-            {
-              id: 2,
-              name: "Ether",
-              symbol: "ETH",
-              icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Ethereum-ETH-icon.png",
-              amount: "0.0000",
-              currency: "ETH",
-              change: "0%",
-              changePeriod: "24h",
-              barChartData: [0, 0, 0, 0, 0],
-              lineChartData: [0, 0, 0, 0, 0],
-              status: 1,
-            },
-            {
-              id: 3,
-              name: "Tether",
-              symbol: "USDT",
-              icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Tether-USDT-icon.png",
-              amount: "0.00",
-              currency: "USDT",
-              change: "0%",
-              changePeriod: "24h",
-              barChartData: [0, 0, 0, 0, 0],
-              lineChartData: [0, 0, 0, 0, 0],
-              status: 1,
-            }
-          ];
+          balances.forEach((b: any, index: number) => {
+            const meta = ASSET_METADATA[b.currency] || {
+              name: b.currency,
+              icon: "https://cdn-icons-png.flaticon.com/512/1213/1213056.png" // generic crypto icon
+            };
 
-          // Update amounts from API
-          balances.forEach((b: any) => {
-            const asset = assets.find(a => a.symbol === b.currency);
-            if (asset) {
-              asset.amount = Math.abs(parseFloat(b.amount)).toString();
-            }
+            // Only add if balance is greater than 0, OR if it's one of the main currencies and we want to show it (optional, but user said NO DUMMY DATA, so maybe strictly > 0 is safer? 
+            // Actually, usually wallets show 0 balance for main assets. But let's stick to what API returns. 
+            // If API returns it, we show it.
+
+            assets.push({
+              id: index + 1,
+              name: meta.name,
+              symbol: b.currency,
+              icon: meta.icon,
+              amount: Math.abs(parseFloat(b.amount)).toString(),
+              currency: b.currency,
+              change: "0%", // We don't have real market data yet
+              changePeriod: "24h",
+              barChartData: [], // No fake charts
+              lineChartData: [], // No fake charts
+              status: 1,
+            });
           });
 
           setData(assets);
