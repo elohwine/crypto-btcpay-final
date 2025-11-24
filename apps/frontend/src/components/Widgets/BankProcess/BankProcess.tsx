@@ -472,8 +472,8 @@ const BankProcess: React.FC = () => {
     }
 
     const amount = parseFloat(withdrawAmount);
-    if (isNaN(amount) || amount < 10) {
-      notify.error("Minimum withdrawal amount is $10");
+    if (isNaN(amount) || amount < 5) {
+      notify.error("Minimum withdrawal amount is $5");
       return;
     }
 
@@ -1060,7 +1060,7 @@ const BankProcess: React.FC = () => {
 
           <div style={{ padding: 16 }}>
             <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light" mb="lg">
-              Withdrawals are processed within 5 minutes. Minimum withdrawal amount is $10.
+              Withdrawals are processed within 5 minutes. Minimum withdrawal amount is $5.
             </Alert>
 
             <div style={{ marginBottom: 24 }}>

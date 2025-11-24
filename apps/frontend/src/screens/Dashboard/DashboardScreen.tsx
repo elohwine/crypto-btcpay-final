@@ -116,7 +116,7 @@ const DashboardScreen: React.FC = () => {
                 person will not be processed.
               </p>
               <p style={{ marginBottom: 8 }}>
-                &bull; The minimum withdrawal amount is 10 TL.
+                &bull; The minimum withdrawal amount is $5.
               </p>
               <p style={{ marginBottom: 8 }}>
                 &bull; A processing fee of 3 TL will be charged for withdrawal
