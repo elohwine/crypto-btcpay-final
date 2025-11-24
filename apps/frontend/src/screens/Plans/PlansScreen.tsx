@@ -6,6 +6,8 @@ import {
     Grid,
     Badge,
     Box,
+    ThemeIcon,
+    List,
 } from '@mantine/core';
 import TopLayout from '../../layouts/TopLayout';
 import PlanCard from '../../components/PlanCard/PlanCard';
@@ -70,6 +72,9 @@ const PlansScreen: React.FC = () => {
                             <Text size="sm" c="dimmed">
                                 Your investments are protected with industry-standard security
                             </Text>
+                            <List.Item>
+                                Withdraw profits <strong>Everyday</strong>
+                            </List.Item>
                         </Grid.Col>
                     </Grid>
                 </Box>

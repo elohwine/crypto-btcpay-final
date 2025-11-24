@@ -9,17 +9,19 @@ import useClickOutside from "../../../hooks/useClickOutside";
 
 // components
 import Box from "../../Common/Box";
-import { Avatar, Indicator } from "@mantine/core";
+import { Avatar, Indicator, Button, Text, Group, Badge, CopyButton, ActionIcon, Tooltip } from "@mantine/core";
+import { IconWallet, IconCopy, IconCheck, IconUsers } from "@tabler/icons-react";
 import { useAppTheme, hexToRgba } from "../../../lib/themeUtils";
 import MyAssets from "../MyAssets/MyAssets";
+import { notify } from "../../../ui/notifications/notify";
 
 const Profile: React.FC = () => {
   const ref = useRef<any>(null);
 
   const [menuOpened, setMenuOpened] = useState<boolean>(false);
-  const [deposits, setDeposits] = useState<any[]>([]);
-  const [loadingDeposits, setLoadingDeposits] = useState<boolean>(false);
-  const [depositsError, setDepositsError] = useState<string | null>(null);
+  const [tronAddress, setTronAddress] = useState<string | null>(null);
+  const [tronBalance, setTronBalance] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState<boolean>(false);
 
   const { user } = useAuth();
 
@@ -30,39 +32,40 @@ const Profile: React.FC = () => {
    */
   const handleMenuOpen = (): void => setMenuOpened(!menuOpened);
 
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setLoadingDeposits(true);
-      setDepositsError(null);
-      try {
-        const res = await api.get("/deposits/me");
-        if (!mounted) return;
-        // keep only supported chains in the profile view
-        const supported = ["BTC", "USDT", "ETH"];
-        const rows = Array.isArray(res.data) ? res.data : [];
-        const filtered = rows.filter((r: any) =>
-          supported.includes(String(r.currency).toUpperCase())
-        );
-        setDeposits(filtered);
-      } catch (err: any) {
-        console.warn("Profile: failed to load deposits", err);
-        if (!mounted) return;
-        setDepositsError(
-          err?.response?.data?.message ||
-            err?.message ||
-            "Failed to load deposits"
-        );
-      } finally {
-        if (mounted) setLoadingDeposits(false);
+  const connectTronWallet = async () => {
+    if (typeof window === 'undefined') return;
+    const tronWeb = (window as any).tronWeb;
+
+    if (!tronWeb) {
+      notify.error("TronLink not installed. Please install TronLink extension.");
+      window.open("https://www.tronlink.org/", "_blank");
+      return;
+    }
+
+    try {
+      setConnecting(true);
+      // Request account access
+      const res = await tronWeb.request({ method: 'tron_requestAccounts' });
+
+      if (res.code === 200 || (tronWeb.ready && tronWeb.defaultAddress.base58)) {
+        const address = tronWeb.defaultAddress.base58;
+        setTronAddress(address);
+
+        // Get balance
+        const balance = await tronWeb.trx.getBalance(address);
+        setTronBalance((balance / 1000000).toFixed(2));
+
+        notify.success("Tron wallet connected successfully");
+      } else {
+        notify.error("Failed to connect Tron wallet");
       }
-    };
-    // only load when we have an authenticated user; otherwise keep empty
-    if (user) load();
-    return () => {
-      mounted = false;
-    };
-  }, [user]);
+    } catch (error) {
+      console.error("Tron connection error:", error);
+      notify.error("Error connecting to Tron wallet");
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   const { primary } = useAppTheme();
 
@@ -84,19 +87,7 @@ const Profile: React.FC = () => {
                 <li>
                   <button type="button">
                     <i className="material-icons">settings</i>
-                    Button 1
-                  </button>
-                </li>
-                <li>
-                  <button type="button">
-                    <i className="material-icons">favorite</i>
-                    Button 2
-                  </button>
-                </li>
-                <li>
-                  <button type="button">
-                    <i className="material-icons">info</i>
-                    Button 3
+                    Settings
                   </button>
                 </li>
               </ul>
@@ -164,9 +155,65 @@ const Profile: React.FC = () => {
         </div>
         <div className="box-horizontal-padding" style={{ marginTop: 12 }}>
           <div className="center">
-            <h3 style={{ margin: 0, marginBottom: 18, color: "var(--text)" }}>
+            <h3 style={{ margin: 0, marginBottom: 8, color: "var(--text)" }}>
               {user?.name || user?.email || "Guest"}
             </h3>
+
+            {/* Referral Info */}
+            {(user as any)?.referralCode && (
+              <Group justify="center" gap="xs" mb="md">
+                <Badge
+                  size="lg"
+                  variant="light"
+                  color="blue"
+                  leftSection={<IconUsers size={14} />}
+                >
+                  Referrals: {(user as any)?.referralCount || 0}
+                </Badge>
+                <CopyButton value={(user as any)?.referralCode} timeout={2000}>
+                  {({ copied, copy }) => (
+                    <Tooltip label={copied ? 'Copied' : 'Copy Referral Code'} withArrow position="right">
+                      <ActionIcon color={copied ? 'teal' : 'gray'} variant="subtle" onClick={copy}>
+                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </CopyButton>
+              </Group>
+            )}
+
+            {/* Tron Wallet Connection */}
+            <div style={{ marginBottom: 20 }}>
+              {!tronAddress ? (
+                <Button
+                  leftSection={<IconWallet size={16} />}
+                  variant="light"
+                  color="red"
+                  size="xs"
+                  loading={connecting}
+                  onClick={connectTronWallet}
+                >
+                  Connect Tron Wallet
+                </Button>
+              ) : (
+                <div style={{
+                  background: hexToRgba(primary, 0.1),
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  display: 'inline-block'
+                }}>
+                  <Text size="xs" c="dimmed" mb={4}>Tron Wallet Connected</Text>
+                  <Group gap={8} justify="center">
+                    <Text size="sm" fw={500}>
+                      {tronAddress.slice(0, 6)}...{tronAddress.slice(-4)}
+                    </Text>
+                    <Badge color="red" variant="filled" size="sm">
+                      {tronBalance || '0.00'} TRX
+                    </Badge>
+                  </Group>
+                </div>
+              )}
+            </div>
           </div>
           <div style={{ marginTop: 16 }}>
             <MyAssets />

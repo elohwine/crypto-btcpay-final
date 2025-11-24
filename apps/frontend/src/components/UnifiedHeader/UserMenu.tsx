@@ -45,7 +45,7 @@ const UserMenu: React.FC = () => {
                         leftSection={<IconChartLine size={14} />}
                         onClick={() => navigate("/plans")}
                     >
-                        Investments
+                        Investment Plans
                     </Menu.Item>
 
                     <Menu.Divider />

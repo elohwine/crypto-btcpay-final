@@ -96,7 +96,24 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true, dateOfBirth: true, phone: true, createdAt: true } });
-    return u;
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        dateOfBirth: true,
+        phone: true,
+        createdAt: true,
+        referralCode: true // Include referral code
+      }
+    });
+
+    // Count referrals
+    const referralCount = await this.prisma.user.count({
+      where: { referredBy: userId }
+    });
+
+    return { ...u, referralCount };
   }
 }

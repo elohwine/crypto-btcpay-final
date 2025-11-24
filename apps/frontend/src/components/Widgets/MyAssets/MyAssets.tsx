@@ -7,19 +7,21 @@ import useClickOutside from "../../../hooks/useClickOutside";
 // components
 import Box from "../../Common/Box";
 import MyAssetsRow from "./MyAssetsRow";
-import { Button } from "@mantine/core";
+import { Button, Loader, Center, Text } from "@mantine/core";
 import { useAppTheme } from "../../../lib/themeUtils";
+import api from "../../../lib/api";
+import { useAuth } from "../../../lib/auth";
 
 const ThemeBuy: React.FC = () => {
   const { primary, contrast } = useAppTheme();
   return (
     <Button
       component={Link}
-      to="/"
+      to="/deposit"
       size="xs"
       style={{ background: primary, color: contrast, borderColor: primary }}
     >
-      Buy crypto
+      Deposit
     </Button>
   );
 };
@@ -39,60 +41,90 @@ interface ICrypto {
   lineChartData: number[];
 }
 
-// variables — keep only supported chains for now (BTC, ETH, USDT)
-const dataArray: ICrypto[] = [
-  {
-    id: 1,
-    name: "Bitcoin",
-    symbol: "BTC",
-    icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/256/Bitcoin-BTC-icon.png",
-    amount: "0.0023",
-    currency: "BTC",
-    change: "%0.5",
-    changePeriod: "This week",
-    barChartData: [30, 20, 25, 35, 30],
-    lineChartData: [5, 10, 5, 20, 8, 15, 22, 8, 12],
-    status: 1,
-  },
-  {
-    id: 2,
-    name: "Ether",
-    symbol: "ETH",
-    icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Ethereum-ETH-icon.png",
-    amount: "0.045",
-    currency: "ETH",
-    change: "%-1.2",
-    changePeriod: "This week",
-    barChartData: [30, 20, 25, 35, 10],
-    lineChartData: [5, 10, 5, 20, 8, 15, 22, 8, 12],
-    status: 2,
-  },
-  {
-    id: 3,
-    name: "Tether",
-    symbol: "USDT",
-    icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Tether-USDT-icon.png",
-    amount: "12.50",
-    currency: "USDT",
-    change: "%0.0",
-    changePeriod: "This week",
-    barChartData: [30, 20, 25, 35, 30],
-    lineChartData: [5, 10, 5, 20, 8, 15, 22, 8, 12],
-    status: 1,
-  },
-];
-
 const MyAssets: React.FC = () => {
   const ref = useRef<any>(null);
+  const { user } = useAuth();
 
   const [data, setData] = useState<ICrypto[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [menuOpened, setMenuOpened] = useState<boolean>(false);
 
   useClickOutside(ref, () => setMenuOpened(false));
 
   useEffect(() => {
-    setData(dataArray);
-  }, []);
+    const fetchBalances = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        const res = await api.get('/deposits/balance');
+
+        if (res.data && res.data.balances) {
+          const balances = res.data.balances;
+
+          // Map API balances to ICrypto format
+          // Default assets structure
+          const assets: ICrypto[] = [
+            {
+              id: 1,
+              name: "Bitcoin",
+              symbol: "BTC",
+              icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/256/Bitcoin-BTC-icon.png",
+              amount: "0.0000",
+              currency: "BTC",
+              change: "0%",
+              changePeriod: "24h",
+              barChartData: [0, 0, 0, 0, 0],
+              lineChartData: [0, 0, 0, 0, 0],
+              status: 1,
+            },
+            {
+              id: 2,
+              name: "Ether",
+              symbol: "ETH",
+              icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Ethereum-ETH-icon.png",
+              amount: "0.0000",
+              currency: "ETH",
+              change: "0%",
+              changePeriod: "24h",
+              barChartData: [0, 0, 0, 0, 0],
+              lineChartData: [0, 0, 0, 0, 0],
+              status: 1,
+            },
+            {
+              id: 3,
+              name: "Tether",
+              symbol: "USDT",
+              icon: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Tether-USDT-icon.png",
+              amount: "0.00",
+              currency: "USDT",
+              change: "0%",
+              changePeriod: "24h",
+              barChartData: [0, 0, 0, 0, 0],
+              lineChartData: [0, 0, 0, 0, 0],
+              status: 1,
+            }
+          ];
+
+          // Update amounts from API
+          balances.forEach((b: any) => {
+            const asset = assets.find(a => a.symbol === b.currency);
+            if (asset) {
+              asset.amount = Math.abs(parseFloat(b.amount)).toString();
+            }
+          });
+
+          setData(assets);
+        }
+      } catch (error) {
+        console.error("Failed to fetch assets", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBalances();
+  }, [user]);
 
   /**
    * Toggles the state of the menu to open or close.
@@ -120,19 +152,7 @@ const MyAssets: React.FC = () => {
                   <li>
                     <button type="button">
                       <i className="material-icons">settings</i>
-                      Button 1
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button">
-                      <i className="material-icons">favorite</i>
-                      Button 2
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button">
-                      <i className="material-icons">info</i>
-                      Button 3
+                      Settings
                     </button>
                   </li>
                 </ul>
@@ -142,10 +162,19 @@ const MyAssets: React.FC = () => {
         </div>
       </div>
       <div className="box-content">
-        {data &&
+        {loading ? (
+          <Center p="xl">
+            <Loader size="sm" />
+          </Center>
+        ) : data.length > 0 ? (
           data.map((item) => (
             <MyAssetsRow key={item.id.toString()} item={item} />
-          ))}
+          ))
+        ) : (
+          <Center p="xl">
+            <Text c="dimmed" size="sm">No assets found</Text>
+          </Center>
+        )}
       </div>
     </Box>
   );
