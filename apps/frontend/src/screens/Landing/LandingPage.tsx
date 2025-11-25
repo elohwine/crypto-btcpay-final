@@ -329,7 +329,7 @@ const LandingPage: React.FC = () => {
                         Flexible Withdrawals
                       </Text>
                       <Text size="sm" c="dimmed">
-                        Monday, Wednesday, Friday (minimum $5)
+                        Instant 24hr withdrawal (minimum $5)
                       </Text>
                     </div>
                   </Group>
@@ -513,7 +513,7 @@ const LandingPage: React.FC = () => {
                 </Title>
                 <Text size="sm" c="dimmed" ta="center">
                   Profits are distributed every weekend according to your plan's
-                  committed percentage. Withdraw profits Mon/Wed/Fri with a $5
+                  committed percentage. Instant 24hr withdrawal with a $5
                   minimum.
                 </Text>
               </Stack>

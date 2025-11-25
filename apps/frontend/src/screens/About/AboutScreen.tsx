@@ -133,8 +133,8 @@ const AboutScreen: React.FC = () => {
               >
                 <Text c="dimmed" size="sm" mt={4}>
                   Every weekend, profits are calculated and distributed to investors
-                  according to their plan's committed percentage. You can withdraw
-                  profits Mon/Wed/Fri.
+                  according to their plan's committed percentage. You can use
+                  Instant 24hr withdrawal.
                 </Text>
               </Timeline.Item>
             </Timeline>
@@ -191,7 +191,7 @@ const AboutScreen: React.FC = () => {
                     <IconClock size={24} />
                   </ThemeIcon>
                   <Text fw={700} size="lg">
-                    Everyday
+                    Instant 24hr
                   </Text>
                   <Badge variant="light" color="green">
                     Withdrawal Day
