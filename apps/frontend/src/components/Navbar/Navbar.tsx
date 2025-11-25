@@ -60,7 +60,7 @@ const Navbar: React.FC = () => {
             title="My profile"
           />
         </li>
-        {user?.role === 'ADMIN' && (
+        {user?.isAdmin && (
           <li>
             <NavbarButton url="/admin" icon="admin_panel_settings" title="Admin" />
           </li>

@@ -3,7 +3,7 @@ import api from "./api";
 import { notify } from "../ui/notifications/notify";
 import { loader } from "../ui/loading/loaderContext";
 
-type User = { id: string; email: string; name?: string; role?: string } | null;
+type User = { id: string; email: string; name?: string; role?: string; isAdmin?: boolean } | null;
 
 type AuthContextValue = {
   user: User;

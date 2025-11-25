@@ -343,6 +343,23 @@ let DepositsController = class DepositsController {
             const minor = Math.round((dep.amount || 0) * Math.pow(10, decimals));
             await this.ledgerService.post(null, `Assets:Custody:${dep.currency}`, BigInt(minor), dep.currency, 'deposit', dep.id);
             await this.ledgerService.post(dep.userId, `Liabilities:User:${dep.userId}:${dep.currency}`, BigInt(-minor), dep.currency, 'deposit', dep.id);
+            try {
+                const confirmedDeposits = await this.prisma.deposit.count({
+                    where: {
+                        userId: dep.userId,
+                        status: 'CONFIRMED'
+                    }
+                });
+                if (confirmedDeposits === 1) {
+                    const bonusAmount = Math.round(minor * 0.1);
+                    console.log(`[Deposits] Applying 10% welcome bonus for user ${dep.userId}: ${bonusAmount} minor units`);
+                    await this.ledgerService.post(dep.userId, `Liabilities:User:${dep.userId}:${dep.currency}`, BigInt(-bonusAmount), dep.currency, 'welcome_bonus', dep.id);
+                    await this.ledgerService.post(null, `Expenses:Bonuses:Welcome`, BigInt(bonusAmount), dep.currency, 'welcome_bonus', dep.id);
+                }
+            }
+            catch (bonusError) {
+                console.error('[Deposits] Failed to apply welcome bonus:', bonusError?.message || bonusError);
+            }
         }
         const network = process.env.TRON_NETWORK || (process.env.TRON_PROVIDER_URL && process.env.TRON_PROVIDER_URL.includes('shasta') ? 'shasta' : 'mainnet');
         const explorerBase = network === 'mainnet' ? 'https://tronscan.org/#/transaction/' : 'https://shasta.tronscan.org/#/transaction/';
@@ -358,6 +375,22 @@ let DepositsController = class DepositsController {
         const user = authUserId || 'seed-user';
         const rows = await this.prisma.deposit.findMany({ where: { userId: user }, orderBy: { createdAt: 'desc' }, select: { id: true, amount: true, currency: true, status: true, createdAt: true, txHash: true, invoiceId: true, walletAddress: true } });
         return rows.map(r => ({ depositId: r.id, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash, invoiceId: r.invoiceId, walletAddress: r.walletAddress }));
+    }
+    async myBalance(req) {
+        const authUserId = req?.user?.sub;
+        const user = authUserId || 'seed-user';
+        if (!this.ledgerService)
+            return { error: 'LedgerService not available' };
+        const balances = await this.ledgerService.balanceByUser(user);
+        const decimals = Number(process.env.TRON_USDT_DECIMALS || 6);
+        const result = balances.map(b => {
+            const minor = b._sum.deltaMinor ? Number(b._sum.deltaMinor) : 0;
+            return {
+                currency: b.currency,
+                amount: minor / Math.pow(10, decimals)
+            };
+        });
+        return { balances: result };
     }
     async getCurrentStoreTronAddress() {
         try {
@@ -504,6 +537,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "myDeposits", null);
+__decorate([
+    (0, common_1.Get)('balance'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DepositsController.prototype, "myBalance", null);
 __decorate([
     (0, common_1.Get)('store/current/tron-address'),
     __metadata("design:type", Function),

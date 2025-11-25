@@ -39,7 +39,7 @@ export class AuthService {
     });
     const tokens = await this.getTokens(user.id, user.email);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
-    return { user: { id: user.id, email: user.email, name: user.name, dateOfBirth: user.dateOfBirth, phone: user.phone }, ...tokens };
+    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin, dateOfBirth: user.dateOfBirth, phone: user.phone }, ...tokens };
   }
 
   async validateUser(email: string, pass: string) {
@@ -55,7 +55,7 @@ export class AuthService {
     if (!user) throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     const tokens = await this.getTokens(user.id, user.email);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
-    return { user: { id: user.id, email: user.email, name: user.name }, ...tokens };
+    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin }, ...tokens };
   }
 
   private async getTokens(userId: string, email: string) {
@@ -83,7 +83,7 @@ export class AuthService {
         // issue new tokens
         const tokens = await this.getTokens(c.userId, c.user.email);
         await this.saveRefreshToken(c.userId, tokens.refreshToken);
-        return { user: { id: c.user.id, email: c.user.email, name: c.user.name }, ...tokens };
+        return { user: { id: c.user.id, email: c.user.email, name: c.user.name, isAdmin: c.user.isAdmin }, ...tokens };
       }
     }
     throw new HttpException('Refresh token invalid', HttpStatus.UNAUTHORIZED);
@@ -102,6 +102,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        isAdmin: true,
         dateOfBirth: true,
         phone: true,
         createdAt: true,

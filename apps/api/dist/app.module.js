@@ -19,6 +19,7 @@ const deposits_module_1 = require("./modules/deposits/deposits.module");
 const webhooks_module_1 = require("./modules/webhooks/webhooks.module");
 const admin_module_1 = require("./modules/admin/admin.module");
 const health_module_1 = require("./modules/health/health.module");
+const chat_module_1 = require("./modules/chat/chat.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -44,6 +45,7 @@ exports.AppModule = AppModule = __decorate([
             webhooks_module_1.WebhooksModule,
             admin_module_1.AdminModule,
             health_module_1.HealthModule,
+            chat_module_1.ChatModule,
         ],
     })
 ], AppModule);
