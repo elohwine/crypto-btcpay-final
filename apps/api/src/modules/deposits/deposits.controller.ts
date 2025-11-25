@@ -16,33 +16,17 @@ export class DepositsController {
   ) { }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async create(@Body() body: any, @Req() req: any) {
-    const { currency, amount, userId, walletAddress } = body;
-    // Prefer authenticated user id (req.user.sub) if available, fall back to provided userId or seed-user for dev
-    const authUserId = req?.user?.sub;
-    const user = userId || authUserId || 'seed-user'; // replace with auth enforcement when ready
+    const { currency, amount, walletAddress } = body;
+    const user = req.user.sub;
+    const email = req.user.email;
 
-    // Ensure a user record exists for the provided userId (simple dev helper).
-    // Use upsert to atomically create the user if missing. In production replace
-    // with proper auth/user lookup.
-    try {
-      await this.prisma.user.upsert({
-        where: { id: user },
-        update: {},
-        create: {
-          id: user,
-          email: `${user}@local.invalid`,
-          name: user,
-          password: process.env.DEFAULT_SEED_PASSWORD || 'changeme',
-        },
-      });
-      console.log(`[Deposits] ensured user exists id=${user}`);
-    } catch (err) {
-      // If upsert fails (unique constraint on email or other), surface a clear error
-      // rather than silently continuing and hitting FK errors later.
-      console.error('[Deposits] failed to ensure user exists', err?.message || err);
-      throw err;
+    if (!user) {
+      throw new Error('User not authenticated');
     }
+
+    console.log(`[Deposits] create -> authenticated user=${user} email=${email}`);
 
     // Generate deposit ID first for orderId
     const depositId = randomUUID();

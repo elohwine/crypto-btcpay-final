@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "npx prisma generate --schema=../../packages/db/prisma/schema.prisma",
     "build": "tsc -p tsconfig.build.json",
     "start:prod": "node dist/main.js",
     "start": "ts-node-dev --respawn --transpile-only src/main.ts"

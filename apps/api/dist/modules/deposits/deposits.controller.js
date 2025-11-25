@@ -28,26 +28,13 @@ let DepositsController = class DepositsController {
         this.ledgerService = ledgerService;
     }
     async create(body, req) {
-        const { currency, amount, userId, walletAddress } = body;
-        const authUserId = req?.user?.sub;
-        const user = userId || authUserId || 'seed-user';
-        try {
-            await this.prisma.user.upsert({
-                where: { id: user },
-                update: {},
-                create: {
-                    id: user,
-                    email: `${user}@local.invalid`,
-                    name: user,
-                    password: process.env.DEFAULT_SEED_PASSWORD || 'changeme',
-                },
-            });
-            console.log(`[Deposits] ensured user exists id=${user}`);
+        const { currency, amount, walletAddress } = body;
+        const user = req.user.sub;
+        const email = req.user.email;
+        if (!user) {
+            throw new Error('User not authenticated');
         }
-        catch (err) {
-            console.error('[Deposits] failed to ensure user exists', err?.message || err);
-            throw err;
-        }
+        console.log(`[Deposits] create -> authenticated user=${user} email=${email}`);
         const depositId = (0, crypto_1.randomUUID)();
         const explicit = (process.env.BTCPAY_ENABLED || '').toLowerCase();
         const hasCreds = !!(process.env.BTCPAY_HOST && process.env.BTCPAY_API_KEY && process.env.BTCPAY_STORE_ID);
@@ -502,6 +489,7 @@ let DepositsController = class DepositsController {
 exports.DepositsController = DepositsController;
 __decorate([
     (0, common_1.Post)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
