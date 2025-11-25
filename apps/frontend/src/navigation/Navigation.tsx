@@ -19,6 +19,7 @@ import LiveSupportScreen from "../screens/LiveSupport/LiveSupportScreen";
 import MessagesScreen from "../screens/Messages/MessagesScreen";
 import WalletScreen from "../screens/Wallet/WalletScreen";
 import SettingsScreen from "../screens/Settings/SettingsScreen";
+import AdminScreen from "../screens/Admin/AdminScreen";
 import { DemoNotifications } from "../components/DemoNotifications";
 import ProtectedRoute from "../components/Common/ProtectedRoute";
 
@@ -95,6 +96,14 @@ const Navigation: React.FC = () => (
       element={
         <ProtectedRoute>
           <SettingsScreen />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin"
+      element={
+        <ProtectedRoute>
+          <AdminScreen />
         </ProtectedRoute>
       }
     />
