@@ -72,6 +72,8 @@ let DepositsController = class DepositsController {
         }
         const metadata = {
             userId: user,
+            email: email,
+            buyerEmail: email,
             customerWallet: resolvedWalletAddress || null,
             orderId: depositId
         };

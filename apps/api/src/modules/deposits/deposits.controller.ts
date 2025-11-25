@@ -75,6 +75,8 @@ export class DepositsController {
     // as a payment destination. Store user-provided or resolved wallet in a non-actionable metadata field instead.
     const metadata = {
       userId: user,
+      email: email,
+      buyerEmail: email, // Standard field for BTCPay
       // place the client-provided or store-derived address in a non-actionable field
       customerWallet: resolvedWalletAddress || null,
       orderId: depositId
