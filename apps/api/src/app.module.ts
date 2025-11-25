@@ -11,6 +11,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { StatsModule } from './modules/stats/stats.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ChatModule } from './modules/chat/chat.module';
     AdminModule,
     HealthModule,
     ChatModule,
+    StatsModule,
   ],
 })
 export class AppModule { }
