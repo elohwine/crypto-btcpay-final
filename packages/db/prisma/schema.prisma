@@ -25,6 +25,7 @@ model User {
   dateOfBirth   DateTime?
   phone         String?
   password      String
+  isAdmin       Boolean  @default(false)
   referralCode  String   @unique @default(cuid())
   referredBy    String?
   refreshTokens RefreshToken[]
