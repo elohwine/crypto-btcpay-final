@@ -72,9 +72,6 @@ const PlansScreen: React.FC = () => {
                             <Text size="sm" c="dimmed">
                                 Your investments are protected with industry-standard security
                             </Text>
-                            <List.Item>
-                                Instant 24hr withdrawal
-                            </List.Item>
                         </Grid.Col>
                     </Grid>
                 </Box>
