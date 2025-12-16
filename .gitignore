@@ -44,9 +44,7 @@ btcpay-plugins/
 coverage/
 
 # Generated ignores by assistant
-.env
-.env.local
-.env.secret.local
+
 backups/
 backups/*.sql
 RENDER_MIGRATION.md
