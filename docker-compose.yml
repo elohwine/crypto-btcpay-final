@@ -110,6 +110,8 @@ services:
       - btcpay_data:/data
       # Plugin mount with write access so BTCPay can manage plugins
       - ./btcpay-plugins:/root/.btcpayserver/Plugins
+    profiles:
+      - btc
 
   api:
     build:
@@ -123,7 +125,6 @@ services:
       BTCPAY_WEBHOOK_SECRET: "${BTCPAY_WEBHOOK_SECRET}"
     depends_on:
       - db
-      - btcpay
     ports:
       - "3001:3001"
 
@@ -133,7 +134,7 @@ services:
     depends_on:
       - api
     ports:
-      - "3000:80"
+      - "4500:80"
 
 volumes:
   db_data:

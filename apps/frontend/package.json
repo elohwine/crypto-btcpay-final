@@ -27,7 +27,7 @@
   },
   "scripts": {
   "start": "DISABLE_ESLINT_PLUGIN=true react-scripts start",
-  "build": "GENERATE_SOURCEMAP=false react-scripts build",
+  "build": "DISABLE_ESLINT_PLUGIN=true GENERATE_SOURCEMAP=false react-scripts build",
     "eslint": "eslint ./src",
     "prettier": "prettier --check **",
     "prettier fix": "prettier --write **"

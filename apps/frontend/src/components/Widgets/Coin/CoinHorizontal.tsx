@@ -33,17 +33,17 @@ const CoinHorizontal: React.FC<IProps> = ({
           <label className="gray">Price</label>
           <strong>
             {item.amount} {item.currency}
-            <em className="red">{item.change}</em>
+            <em className={String(item.change || '').startsWith('+') ? 'green' : 'red'}>{item.change}</em>
           </strong>
         </div>
         <div className="divider responsive-hide2" />
         <div className="responsive-hide2">
-          <label className="gray">Financing rate</label>
+          <label className="gray">Last update</label>
           <strong>{item.financialRate}</strong>
         </div>
         <div className="divider responsive-hide2" />
         <div className="responsive-hide2">
-          <label className="gray">Weight</label>
+          <label className="gray">Bid / Ask</label>
           <strong>{item.weight}</strong>
         </div>
         <div className="divider responsive-hide" />

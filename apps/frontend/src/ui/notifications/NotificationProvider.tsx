@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import mantineTheme from "../../lib/theme";
@@ -33,7 +33,10 @@ export const UIRootProviders: React.FC<UIRootProvidersProps> = ({
     }
   };
 
-  const appliedTheme: any = { ...mantineTheme, colorScheme };
+  const appliedTheme: any = useMemo(
+    () => ({ ...mantineTheme, colorScheme }),
+    [colorScheme]
+  );
 
   // Keep CSS variable --primary in sync with Mantine theme primary color
   // Use useEffect so this runs client-side after hydration
@@ -74,7 +77,7 @@ export const UIRootProviders: React.FC<UIRootProvidersProps> = ({
     } catch (err) {
       // ignore; don't break rendering if theme reading fails
     }
-  }, [colorScheme, appliedTheme.primaryColor]);
+  }, [appliedTheme, colorScheme]);
 
   return (
     <AppColorSchemeContext.Provider value={{ colorScheme, toggleColorScheme }}>

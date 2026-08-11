@@ -73,7 +73,15 @@ let BtcpayService = class BtcpayService {
             const detail = e?.response?.data || e?.message || String(e);
             const message = (typeof detail === 'string') ? detail : JSON.stringify(detail);
             console.warn('[BtcpayService] preferred invoice creation failed, will attempt fallback. Detail:', message);
-            const fallbackTriggers = ['Unable to get rate', 'Payment method unavailable', 'Error retrieving a matching payment method', 'Rate rule error', 'ERR_TOO_MUCH_NESTED_CALLS'];
+            const fallbackTriggers = [
+                'Unable to get rate',
+                'Payment method unavailable',
+                'Error retrieving a matching payment method',
+                'Rate rule error',
+                'ERR_TOO_MUCH_NESTED_CALLS',
+                'Invalid PaymentMethodId',
+                'Invalid PaymentMethod'
+            ];
             const shouldFallback = fallbackTriggers.some(t => message.includes(t)) || message.includes('ENOTFOUND') || message.includes('getaddrinfo');
             if (!shouldFallback) {
                 console.error('BTCPay create invoice error (no fallback):', message);

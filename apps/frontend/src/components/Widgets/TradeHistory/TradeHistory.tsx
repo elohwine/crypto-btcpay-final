@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import api from "../../../lib/api";
 
 // hooks
 import useClickOutside from "../../../hooks/useClickOutside";
@@ -93,7 +94,11 @@ const dataArray: IHistory[] = [
   },
 ];
 
-const TradeHistory: React.FC = () => {
+type Props = {
+  symbol?: string;
+};
+
+const TradeHistory: React.FC<Props> = ({ symbol = "BTC_USDT" }) => {
   const ref = useRef<any>(null);
 
   const [data, setData] = useState<IHistory[]>([]);
@@ -102,8 +107,43 @@ const TradeHistory: React.FC = () => {
   useClickOutside(ref, () => setMenuOpened(false));
 
   useEffect(() => {
-    setData(dataArray);
-  }, []);
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await api.get(`/spot/trades/${symbol}`, {
+          params: { limit: 12 },
+        });
+        if (!mounted) return;
+        const quoteCurrency = symbol.split("_")[1] || "USDT";
+        const trades = Array.isArray(res.data?.trades) ? res.data.trades : [];
+        if (!trades.length) {
+          setData(dataArray);
+          return;
+        }
+
+        setData(
+          trades.map((item: any, index: number) => ({
+            id: index + 1,
+            amount: Number(item.price).toFixed(4),
+            currency: quoteCurrency,
+            weight: Number(item.quantity).toFixed(8),
+            time: new Date(item.createdAt).toLocaleTimeString(),
+            type: item.takerSide === "BUY" ? 1 : 2,
+          }))
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setData(dataArray);
+      }
+    };
+
+    load();
+    const timer = window.setInterval(load, 5000);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [symbol]);
 
   /**
    * Toggles the state of the menu to open or close.

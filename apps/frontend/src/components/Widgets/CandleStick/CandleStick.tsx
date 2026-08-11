@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 import ReactApexChart from "react-apexcharts";
+import api from "../../../lib/api";
 
 // components
 import Box from "../../Common/Box";
@@ -278,12 +279,75 @@ const data: ISeries = {
   },
 };
 
-const CandleStick: React.FC = () => {
+type Props = {
+  symbol?: string;
+};
+
+const CandleStick: React.FC<Props> = ({ symbol = "BTC_USDT" }) => {
   const [state, setState] = useState<ISeries | null>(null);
 
   useEffect(() => {
-    setState(data);
-  }, []);
+    let mounted = true;
+
+    const buildCandles = (trades: any[]) => {
+      if (!trades.length) return data;
+
+      const sorted = [...trades]
+        .filter((row) => row?.createdAt && Number.isFinite(Number(row?.price)))
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+
+      if (!sorted.length) return data;
+
+      const buckets = new Map<number, number[]>();
+      for (const trade of sorted) {
+        const ts = new Date(trade.createdAt).getTime();
+        const bucket = Math.floor(ts / 60000) * 60000;
+        const existing = buckets.get(bucket) || [];
+        existing.push(Number(trade.price));
+        buckets.set(bucket, existing);
+      }
+
+      const candleData = Array.from(buckets.entries())
+        .sort((a, b) => a[0] - b[0])
+        .slice(-60)
+        .map(([bucket, prices]) => ({
+          x: new Date(bucket),
+          y: [
+            prices[0],
+            Math.max(...prices),
+            Math.min(...prices),
+            prices[prices.length - 1],
+          ],
+        }));
+
+      return {
+        ...data,
+        series: [{ data: candleData.length ? candleData : data.series[0].data }],
+      };
+    };
+
+    const load = async () => {
+      try {
+        const res = await api.get(`/spot/trades/${symbol}`, {
+          params: { limit: 200 },
+        });
+        if (!mounted) return;
+        const trades = Array.isArray(res.data?.trades) ? res.data.trades : [];
+        setState(buildCandles(trades));
+      } catch (e) {
+        if (!mounted) return;
+        setState(data);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [symbol]);
 
   return (
     <Box>

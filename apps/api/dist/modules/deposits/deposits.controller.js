@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DepositsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,6 +19,9 @@ const client_1 = require("@prisma/client");
 const btcpay_service_1 = require("../btcpay/btcpay.service");
 const tron_service_1 = require("../tron/tron.service");
 const ledger_service_1 = require("../ledger/ledger.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const crypto_1 = require("crypto");
+const deposits_dto_1 = require("./dto/deposits.dto");
 let DepositsController = class DepositsController {
     constructor(prisma, btcpayService, tronService, ledgerService) {
         this.prisma = prisma;
@@ -46,6 +50,7 @@ let DepositsController = class DepositsController {
             console.error('[Deposits] failed to ensure user exists', err?.message || err);
             throw err;
         }
+        const depositId = (0, crypto_1.randomUUID)();
         const curr = currency || 'USDT';
         let resolvedWalletAddress = walletAddress || null;
         let storePermissionMissing = null;
@@ -72,7 +77,8 @@ let DepositsController = class DepositsController {
         }
         const metadata = {
             userId: user,
-            customerWallet: resolvedWalletAddress || null
+            customerWallet: resolvedWalletAddress || null,
+            orderId: depositId
         };
         let invoice = null;
         let invoiceId = null;
@@ -141,6 +147,7 @@ let DepositsController = class DepositsController {
         console.log(`[Deposits] create -> user=${user} amount=${amount} currency=${currency} invoiceId=${invoiceId} walletRequested=${walletAddress} walletResolved=${resolvedWalletAddress} storePermissionMissing=${storePermissionMissing}`);
         const dep = await this.prisma.deposit.create({
             data: {
+                id: depositId,
                 userId: user,
                 invoiceId,
                 amount: amount ? Number(amount) : 0.0,
@@ -345,6 +352,12 @@ let DepositsController = class DepositsController {
         const rows = await this.prisma.deposit.findMany({ take: 100, orderBy: { createdAt: 'desc' }, select: { id: true, invoiceId: true, amount: true, currency: true, status: true, createdAt: true, txHash: true } });
         return rows.map(r => ({ depositId: r.id, invoiceId: r.invoiceId, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash }));
     }
+    async myDeposits(req) {
+        const authUserId = req?.user?.sub;
+        const user = authUserId || 'seed-user';
+        const rows = await this.prisma.deposit.findMany({ where: { userId: user }, orderBy: { createdAt: 'desc' }, select: { id: true, amount: true, currency: true, status: true, createdAt: true, txHash: true, invoiceId: true, walletAddress: true } });
+        return rows.map(r => ({ depositId: r.id, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.createdAt, txHash: r.txHash, invoiceId: r.invoiceId, walletAddress: r.walletAddress }));
+    }
     async getStoreTronAddress(storeId) {
         try {
             const status = await this.btcpayService.getStoreWalletAddressStatus('USDT', storeId);
@@ -439,10 +452,11 @@ let DepositsController = class DepositsController {
 exports.DepositsController = DepositsController;
 __decorate([
     (0, common_1.Post)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [deposits_dto_1.CreateDepositDto, Object]),
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "create", null);
 __decorate([
@@ -457,7 +471,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [deposits_dto_1.DirectDepositDto, Object]),
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "direct", null);
 __decorate([
@@ -466,6 +480,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], DepositsController.prototype, "publicList", null);
+__decorate([
+    (0, common_1.Get)('me'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DepositsController.prototype, "myDeposits", null);
 __decorate([
     (0, common_1.Get)('store/:storeId/tron-address'),
     __param(0, (0, common_1.Param)('storeId')),
@@ -488,8 +510,7 @@ __decorate([
 exports.DepositsController = DepositsController = __decorate([
     (0, common_1.Controller)('api/deposits'),
     __param(0, (0, common_1.Inject)('PRISMA')),
-    __metadata("design:paramtypes", [client_1.PrismaClient,
-        btcpay_service_1.BtcpayService,
+    __metadata("design:paramtypes", [typeof (_a = typeof client_1.PrismaClient !== "undefined" && client_1.PrismaClient) === "function" ? _a : Object, btcpay_service_1.BtcpayService,
         tron_service_1.TronService,
         ledger_service_1.LedgerService])
 ], DepositsController);

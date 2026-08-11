@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAppTheme } from "../../../lib/themeUtils";
+import api from "../../../lib/api";
+import { useAuth } from "../../../lib/auth";
 
 // components
 import Box from "../../Common/Box";
@@ -13,74 +16,69 @@ interface IActivity {
   amount: string;
   status: number;
   currency: string;
+  pair?: string;
 }
 
 // variables
-const dataArray: IActivity[] = [
-  {
-    id: 1,
-    type: 1,
-    time: "06:25:57",
-    amount: "212,50",
-    currency: "TRY",
-    status: 1,
-  },
-  {
-    id: 2,
-    type: 1,
-    time: "08:30:25",
-    amount: "1.465,85",
-    currency: "TRY",
-    status: 1,
-  },
-  {
-    id: 3,
-    type: 2,
-    time: "09:16:11",
-    amount: "6.000,00",
-    currency: "TRY",
-    status: 2,
-  },
-  {
-    id: 4,
-    type: 1,
-    time: "12:05:03",
-    amount: "2.225,35",
-    currency: "TRY",
-    status: 1,
-  },
-  {
-    id: 5,
-    type: 1,
-    time: "14:46:53",
-    amount: "128,01",
-    currency: "TRY",
-    status: 3,
-  },
-  {
-    id: 6,
-    type: 2,
-    time: "18:01:03",
-    amount: "350,00",
-    currency: "TRY",
-    status: 2,
-  },
-];
-
 const RecentActivity: React.FC = () => {
   const [data, setData] = useState<IActivity[]>([]);
   const { primary } = useAppTheme();
+  const { user } = useAuth();
 
   useEffect(() => {
-    setData(dataArray);
-  }, []);
+    let mounted = true;
+
+    const load = async () => {
+      if (!user?.id) {
+        if (mounted) setData([]);
+        return;
+      }
+
+      try {
+        const res = await api.get(`/spot/orders/${user.id}`);
+        if (!mounted) return;
+        const rows = Array.isArray(res.data) ? res.data : [];
+        if (!rows.length) {
+          setData([]);
+          return;
+        }
+
+        setData(
+          rows.slice(0, 8).map((row: any, index: number) => ({
+            id: index + 1,
+            type: row.side === "BUY" ? 1 : 2,
+            time: new Date(row.createdAt).toLocaleTimeString(),
+            amount: Number(row.quantity || 0).toFixed(8),
+            currency: String(row.symbol || "BTC_USDT").split("_")[0] || "BTC",
+            pair: String(row.symbol || "BTC_USDT").replace("_", "/"),
+            status:
+              row.status === "FILLED"
+                ? 1
+                : row.status === "CANCELLED"
+                ? 2
+                : 3,
+          }))
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setData([]);
+      }
+    };
+
+    load();
+    const timer = window.setInterval(load, 5000);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [user?.id]);
 
   return (
     <Box>
       <div className="box-title box-vertical-padding box-horizontal-padding no-select">
         <div className="flex flex-center flex-space-between">
           <div>
-            <p>History</p>
+            <p>Recent orders</p>
           </div>
           <ul>
             <li>
@@ -99,10 +97,22 @@ const RecentActivity: React.FC = () => {
         </div>
       </div>
       <div className="box-content">
-        {data &&
+        {!user?.id ? (
+          <div className="box-horizontal-padding box-vertical-padding">
+            <p>Sign in to review your recent spot orders.</p>
+            <Link to="/members/signin" style={{ color: primary, fontWeight: 600 }}>
+              Sign in
+            </Link>
+          </div>
+        ) : data && data.length > 0 ? (
           data.map((item: IActivity) => (
             <RecentActivityRow key={item.id.toString()} item={item} />
-          ))}
+          ))
+        ) : (
+          <div className="box-horizontal-padding box-vertical-padding">
+            <p>No spot order activity yet.</p>
+          </div>
+        )}
       </div>
     </Box>
   );

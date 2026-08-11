@@ -15,6 +15,7 @@ const auth_module_1 = require("./modules/auth/auth.module");
 const ledger_module_1 = require("./modules/ledger/ledger.module");
 const deposits_module_1 = require("./modules/deposits/deposits.module");
 const webhooks_module_1 = require("./modules/webhooks/webhooks.module");
+const spot_module_1 = require("./modules/spot/spot.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -34,6 +35,7 @@ exports.AppModule = AppModule = __decorate([
             ledger_module_1.LedgerModule,
             deposits_module_1.DepositsModule,
             webhooks_module_1.WebhooksModule,
+            spot_module_1.SpotModule,
         ],
     })
 ], AppModule);

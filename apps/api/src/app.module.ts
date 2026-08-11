@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { DepositsModule } from './modules/deposits/deposits.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { SpotModule } from './modules/spot/spot.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     LedgerModule,
     DepositsModule,
     WebhooksModule,
+    SpotModule,
   ],
 })
 export class AppModule {}

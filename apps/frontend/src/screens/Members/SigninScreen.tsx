@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 // hooks
 import useFormEvents from "../../hooks/useFormEvents";
@@ -20,6 +20,7 @@ interface IFormProps {
 
 const SigninScreen: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   useFormEvents();
   const { signin } = useAuth();
   const [formValues, setFormValues] = useState<IFormProps>({
@@ -33,7 +34,7 @@ const SigninScreen: React.FC = () => {
     setIsLoading(true);
     try {
       await signin(email, password);
-      navigate("/dashboard");
+      navigate(searchParams.get("redirect") || "/dashboard");
     } catch (error) {
       // Error is handled in auth.tsx with notify
     } finally {

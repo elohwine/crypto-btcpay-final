@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import api from "../../../lib/api";
 
 // hooks
 import useClickOutside from "../../../hooks/useClickOutside";
@@ -93,7 +94,11 @@ const dataArray: IOrder[] = [
   },
 ];
 
-const SellOrders: React.FC = () => {
+type Props = {
+  symbol?: string;
+};
+
+const SellOrders: React.FC<Props> = ({ symbol = "BTC_USDT" }) => {
   const ref = useRef<any>(null);
 
   const [data, setData] = useState<IOrder[]>([]);
@@ -102,8 +107,43 @@ const SellOrders: React.FC = () => {
   useClickOutside(ref, () => setMenuOpened(false));
 
   useEffect(() => {
-    setData(dataArray);
-  }, []);
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await api.get(`/spot/orderbook/${symbol}`, {
+          params: { depth: 12 },
+        });
+        if (!mounted) return;
+        const quoteCurrency = symbol.split("_")[1] || "USDT";
+        const asks = Array.isArray(res.data?.asks) ? res.data.asks : [];
+        if (!asks.length) {
+          setData(dataArray);
+          return;
+        }
+
+        setData(
+          asks.map((item: any, index: number) => ({
+            id: index + 1,
+            price: Number(item.price).toFixed(4),
+            amount: Number(item.quantity).toFixed(8),
+            total: Number(Number(item.price) * Number(item.quantity)).toFixed(4),
+            currency: quoteCurrency,
+            type: 2,
+          }))
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setData(dataArray);
+      }
+    };
+
+    load();
+    const timer = window.setInterval(load, 5000);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [symbol]);
 
   /**
    * Toggles the state of the menu to open or close.

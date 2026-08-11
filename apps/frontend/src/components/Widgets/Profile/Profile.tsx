@@ -1,8 +1,7 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 
 // lib
 import { useAuth } from "../../../lib/auth";
-import api from "../../../lib/api";
 
 // hooks
 import useClickOutside from "../../../hooks/useClickOutside";
@@ -17,9 +16,6 @@ const Profile: React.FC = () => {
   const ref = useRef<any>(null);
 
   const [menuOpened, setMenuOpened] = useState<boolean>(false);
-  const [deposits, setDeposits] = useState<any[]>([]);
-  const [loadingDeposits, setLoadingDeposits] = useState<boolean>(false);
-  const [depositsError, setDepositsError] = useState<string | null>(null);
 
   const { user } = useAuth();
 
@@ -29,40 +25,6 @@ const Profile: React.FC = () => {
    * Toggles the state of the menu to open or close.
    */
   const handleMenuOpen = (): void => setMenuOpened(!menuOpened);
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setLoadingDeposits(true);
-      setDepositsError(null);
-      try {
-        const res = await api.get("/deposits/me");
-        if (!mounted) return;
-        // keep only supported chains in the profile view
-        const supported = ["BTC", "USDT", "ETH"];
-        const rows = Array.isArray(res.data) ? res.data : [];
-        const filtered = rows.filter((r: any) =>
-          supported.includes(String(r.currency).toUpperCase())
-        );
-        setDeposits(filtered);
-      } catch (err: any) {
-        console.warn("Profile: failed to load deposits", err);
-        if (!mounted) return;
-        setDepositsError(
-          err?.response?.data?.message ||
-            err?.message ||
-            "Failed to load deposits"
-        );
-      } finally {
-        if (mounted) setLoadingDeposits(false);
-      }
-    };
-    // only load when we have an authenticated user; otherwise keep empty
-    if (user) load();
-    return () => {
-      mounted = false;
-    };
-  }, [user]);
 
   const { primary } = useAppTheme();
 

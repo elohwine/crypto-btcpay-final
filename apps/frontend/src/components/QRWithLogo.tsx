@@ -22,7 +22,8 @@ const QRWithLogo: React.FC<Props> = ({
   const { primary } = useAppTheme();
 
   useEffect(() => {
-    if (!mountRef.current) return;
+    const mountNode = mountRef.current;
+    if (!mountNode) return;
     qrRef.current = new (QRCodeStyling as any)({
       width: size,
       height: size,
@@ -49,12 +50,12 @@ const QRWithLogo: React.FC<Props> = ({
       },
     });
 
-    mountRef.current.innerHTML = "";
-    qrRef.current.append(mountRef.current);
+    mountNode.innerHTML = "";
+    qrRef.current.append(mountNode);
 
     return () => {
       try {
-        if (mountRef.current) mountRef.current.innerHTML = "";
+        mountNode.innerHTML = "";
         qrRef.current = null;
       } catch (e) {
         // ignore

@@ -10,7 +10,7 @@ const ProcessType: React.FC<IProps> = ({ type }) => {
         <div className="icon green">
           <i className="material-icons">arrow_upward</i>
         </div>
-        <strong>Deposit</strong>
+        <strong>Buy</strong>
       </div>
     );
   }
@@ -20,7 +20,7 @@ const ProcessType: React.FC<IProps> = ({ type }) => {
       <div className="icon red">
         <i className="material-icons">arrow_downward</i>
       </div>
-      <strong>Withdraw</strong>
+      <strong>Sell</strong>
     </div>
   );
 };

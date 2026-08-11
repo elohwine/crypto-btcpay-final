@@ -25,6 +25,20 @@ export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({
   const [onCancel, setOnCancel] = useState<(() => void) | undefined>();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const hide = useCallback(() => {
+    countRef.current = Math.max(0, countRef.current - 1);
+    if (countRef.current === 0) {
+      // clear any pending show timer
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+      setVisible(false);
+      setMessage("");
+      setOnCancel(undefined);
+    }
+  }, []);
+
   const show = useCallback((msg?: string, cancel?: () => void) => {
     countRef.current += 1;
     setMessage(msg || "Loading...");
@@ -46,21 +60,7 @@ export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }, 30000);
     }, 200);
-  }, []);
-
-  const hide = useCallback(() => {
-    countRef.current = Math.max(0, countRef.current - 1);
-    if (countRef.current === 0) {
-      // clear any pending show timer
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-        debounceTimer.current = null;
-      }
-      setVisible(false);
-      setMessage("");
-      setOnCancel(undefined);
-    }
-  }, []);
+  }, [hide]);
 
   // Register global imperative bridge so non-React modules (axios) can call loader.show/hide
   useEffect(() => {

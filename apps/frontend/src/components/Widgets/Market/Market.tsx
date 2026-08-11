@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import { Link } from "react-router-dom";
+import api from "../../../lib/api";
 
 // components
 import Box from "../../Common/Box";
@@ -9,15 +10,26 @@ import MarketRow from "./MarketRow";
 // interfaces
 interface ICrypto {
   id: number;
+  symbol?: string;
   name: string;
   icon: string;
   date: string;
   amount: string;
   change: string;
+  high: string;
+  low: string;
+  volume: string;
   status: number;
   currency: string;
   lineChartData: number[];
+  selected?: boolean;
+  actionLabel: string;
 }
+
+type Props = {
+  activeSymbol?: string;
+  onSelectSymbol?: (symbol: string) => void;
+};
 
 // variables
 const dataArray: ICrypto[] = [
@@ -29,8 +41,12 @@ const dataArray: ICrypto[] = [
     amount: "18.783,33",
     currency: "TRY",
     change: "%45",
+    high: "19.102,00",
+    low: "17.901,00",
+    volume: "12,200.41",
     lineChartData: [10, 15, 10, 15, 15, 18],
     status: 1,
+    actionLabel: "Trade",
   },
   {
     id: 2,
@@ -40,8 +56,12 @@ const dataArray: ICrypto[] = [
     amount: "3.125,25",
     currency: "TRY",
     change: "-%30",
+    high: "3.180,12",
+    low: "3.001,44",
+    volume: "159,781.67",
     lineChartData: [30, 20, 25, 35, 10, 8],
     status: 2,
+    actionLabel: "Trade",
   },
   {
     id: 3,
@@ -51,8 +71,12 @@ const dataArray: ICrypto[] = [
     amount: "125,12",
     currency: "TRY",
     change: "%3",
+    high: "125.80",
+    low: "123.77",
+    volume: "1,012,401.26",
     lineChartData: [30, 20, 25, 35, 30, 35],
     status: 1,
+    actionLabel: "Trade",
   },
   {
     id: 4,
@@ -62,8 +86,12 @@ const dataArray: ICrypto[] = [
     amount: "10,05",
     currency: "TRY",
     change: "%16",
+    high: "10.44",
+    low: "9.85",
+    volume: "38,393,342",
     lineChartData: [30, 20, 25, 35, 30, 35],
     status: 1,
+    actionLabel: "Trade",
   },
   {
     id: 5,
@@ -73,8 +101,12 @@ const dataArray: ICrypto[] = [
     amount: "3,05",
     currency: "TRY",
     change: "-%3",
+    high: "3.19",
+    low: "2.89",
+    volume: "50,147,639.8",
     lineChartData: [30, 20, 25, 35, 20, 10],
     status: 2,
+    actionLabel: "Trade",
   },
   {
     id: 6,
@@ -84,8 +116,12 @@ const dataArray: ICrypto[] = [
     amount: "1,05",
     currency: "TRY",
     change: "-%6",
+    high: "1.08",
+    low: "0.98",
+    volume: "232,624,469",
     lineChartData: [30, 20, 25, 35, 25, 30],
     status: 2,
+    actionLabel: "Trade",
   },
   {
     id: 7,
@@ -95,30 +131,140 @@ const dataArray: ICrypto[] = [
     amount: "10,12",
     currency: "TRY",
     change: "%6",
+    high: "10.34",
+    low: "9.88",
+    volume: "529,454,049,889",
     lineChartData: [30, 20, 25, 35, 25, 30],
     status: 1,
+    actionLabel: "Trade",
   },
 ];
 
-const Market: React.FC = () => {
+const Market: React.FC<Props> = ({ activeSymbol = "BTC_USDT", onSelectSymbol }) => {
   const [data, setData] = useState<ICrypto[]>([]);
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [quoteFilter, setQuoteFilter] = useState<string>("ALL");
 
   useEffect(() => {
-    setData(dataArray);
-  }, []);
+    let mounted = true;
+
+    const iconByBase: Record<string, string> = {
+      BTC: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/256/Bitcoin-BTC-icon.png",
+      ETH: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Ethereum-ETH-icon.png",
+      TRX: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Tron-TRX-icon.png",
+      USDT: "https://icons.iconarchive.com/icons/cjdowner/cryptocurrency-flat/1024/Tether-USDT-icon.png",
+    };
+
+    const load = async () => {
+      try {
+        const res = await api.get("/spot/markets", {
+          params: { includeOrderBookTop: "true" },
+        });
+        if (!mounted) return;
+
+        const rows = Array.isArray(res.data) ? res.data : [];
+        if (!rows.length) {
+          setData(dataArray);
+          return;
+        }
+
+        const mapped: ICrypto[] = rows.map((row: any, idx: number) => {
+          const symbol = String(row.symbol || "BTC_USDT");
+          const [base = "BTC", quote = "USDT"] = symbol.split("_");
+          const price = Number(row.lastPrice || 0);
+          const spread = Number(row.spread || 0);
+          const changePercent = Number(row.changePercent || 0);
+
+          return {
+            id: idx + 1,
+            symbol,
+            name: `${base}/${quote}`,
+            icon: iconByBase[base] || iconByBase.BTC,
+            date: row.lastTradeAt || "Live",
+            amount: price > 0 ? price.toFixed(4) : "--",
+            currency: quote,
+            change: `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(2)}%`,
+            high: Number(row.high24h || 0) > 0 ? Number(row.high24h).toFixed(4) : "--",
+            low: Number(row.low24h || 0) > 0 ? Number(row.low24h).toFixed(4) : "--",
+            volume: Number(row.volume24h || 0) > 0 ? Number(row.volume24h).toFixed(4) : "--",
+            lineChartData: [price * 0.995, price * 0.998, price, price * 1.001, price * 1.002, price],
+            status: spread > 0 ? 2 : 1,
+            selected: symbol === activeSymbol,
+            actionLabel: "Trade",
+          };
+        });
+
+        setData(mapped);
+      } catch (e) {
+        if (!mounted) return;
+        setData(dataArray);
+      }
+    };
+
+    load();
+    const timer = window.setInterval(load, 5000);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [activeSymbol]);
+
+  const filteredData = useMemo(() => {
+    const query = searchValue.trim().toUpperCase();
+    return data.filter((item) => {
+      const symbol = String(item.symbol || item.name || "").toUpperCase();
+      const matchesSearch = !query || symbol.includes(query);
+      const quote = String(item.currency || "").toUpperCase();
+      const matchesQuote = quoteFilter === "ALL" || quote === quoteFilter;
+      return matchesSearch && matchesQuote;
+    });
+  }, [data, quoteFilter, searchValue]);
 
   return (
     <Box>
       <div className="box-title box-vertical-padding box-horizontal-padding no-select">
-        Markets
+        <div className="flex flex-center flex-space-between" style={{ gap: 12 }}>
+          <strong>Markets</strong>
+          <input
+            type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search"
+            aria-label="Search markets"
+            style={{
+              minWidth: 120,
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: "1px solid var(--border, rgba(0,0,0,0.12))",
+              background: "var(--bg, transparent)",
+              color: "var(--text)",
+            }}
+          />
+        </div>
+        <div className="tabs no-select" style={{ marginTop: 12 }}>
+          <button
+            type="button"
+            className={quoteFilter === "ALL" ? "active" : "passive"}
+            onClick={() => setQuoteFilter("ALL")}
+          >
+            All Markets
+          </button>
+          <button
+            type="button"
+            className={quoteFilter === "USDT" ? "active" : "passive"}
+            onClick={() => setQuoteFilter("USDT")}
+          >
+            USDT
+          </button>
+        </div>
       </div>
       <div className="box-content box-content-height">
-        {data &&
-          data.map((item) => (
-            <MarketRow key={item.id.toString()} item={item} />
+        {filteredData &&
+          filteredData.map((item) => (
+            <MarketRow key={item.id.toString()} item={item} onSelect={onSelectSymbol} />
           ))}
       </div>
-      <div className="box-button box-vertical-padding box-horizontal-padding">
+      <div className="box-button box-vertical-padding box-horizontal-padding spot-market-footer-cta">
         <Link
           to="/capital"
           className="button button-purple button-medium button-block"

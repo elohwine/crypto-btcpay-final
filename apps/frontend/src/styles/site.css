@@ -1408,6 +1408,111 @@ header .header-right .header-user .signout i {
   border-bottom: 1px solid var(--surface-border, #dadada);
 }
 
+.spot-screen-shell,
+.spot-directory-shell {
+  padding: 24px;
+}
+
+.spot-hero-card,
+.spot-directory-hero {
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 28%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.96));
+  color: #f8fafc;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.22);
+}
+
+.spot-directory-hero {
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(248, 250, 252, 1), rgba(241, 245, 249, 0.98));
+  color: var(--text);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.spot-hero-title {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.spot-hero-price {
+  margin-top: 10px;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 700;
+}
+
+.spot-hero-copy {
+  max-width: 720px;
+  margin-top: 12px;
+  color: rgba(248, 250, 252, 0.82);
+  line-height: 1.65;
+}
+
+.spot-stat-card,
+.spot-panel-card,
+.spot-funding-card {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.spot-stat-card {
+  background: rgba(255, 255, 255, 0.09);
+  color: #f8fafc;
+}
+
+.spot-panel-card,
+.spot-funding-card {
+  background: var(--surface, #ffffff);
+}
+
+.spot-market-footer-cta {
+  padding-top: 8px;
+}
+
+.spot-screen-shell .box,
+.spot-directory-shell .box {
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+.spot-screen-shell .box .box-title,
+.spot-directory-shell .box .box-title {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.spot-screen-shell .market-row {
+  padding: 12px 14px;
+  border-radius: 16px;
+  margin: 8px 10px;
+}
+
+.spot-screen-shell .market-row:hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.spot-screen-shell .orders-row table td,
+.spot-screen-shell .trade-history-row table td {
+  padding: 12px 10px;
+}
+
+.spot-directory-shell table {
+  font-size: 0.94rem;
+}
+
+@media (max-width: 992px) {
+  .spot-screen-shell,
+  .spot-directory-shell {
+    padding: 16px;
+  }
+
+  .spot-screen-shell .market-row {
+    margin: 8px 0;
+  }
+}
+
 /* 404 */
 
 .logo-404 {

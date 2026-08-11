@@ -105,6 +105,64 @@ const CoinVertical: React.FC<IProps> = ({ item }) => {
               1 {item.symbol} = {item.amount} {item.currency}
             </div>
           </div>
+          <div
+            className="box-horizontal-padding"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 10,
+              marginTop: 12,
+            }}
+          >
+            <div
+              style={{
+                background: "var(--surface-alt, rgba(0,0,0,0.03))",
+                borderRadius: 10,
+                padding: 10,
+              }}
+            >
+              <div className="gray" style={{ fontSize: 12 }}>
+                Pair
+              </div>
+              <strong>{item.exchange || `${item.symbol}/${item.currency}`}</strong>
+            </div>
+            <div
+              style={{
+                background: "var(--surface-alt, rgba(0,0,0,0.03))",
+                borderRadius: 10,
+                padding: 10,
+              }}
+            >
+              <div className="gray" style={{ fontSize: 12 }}>
+                Spread
+              </div>
+              <strong>{item.change || "--"}</strong>
+            </div>
+            <div
+              style={{
+                background: "var(--surface-alt, rgba(0,0,0,0.03))",
+                borderRadius: 10,
+                padding: 10,
+              }}
+            >
+              <div className="gray" style={{ fontSize: 12 }}>
+                Bid / Ask
+              </div>
+              <strong>{item.weight || "-- / --"}</strong>
+            </div>
+            <div
+              style={{
+                background: "var(--surface-alt, rgba(0,0,0,0.03))",
+                borderRadius: 10,
+                padding: 10,
+              }}
+            >
+              <div className="gray" style={{ fontSize: 12 }}>
+                Last update
+              </div>
+              <strong>{item.financialRate || "--"}</strong>
+            </div>
+          </div>
           <div className="box-horizontal-padding box-vertical-padding">
             {showMore ? (
               <p>{item.description}</p>

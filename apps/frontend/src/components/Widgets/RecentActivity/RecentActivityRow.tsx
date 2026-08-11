@@ -11,7 +11,7 @@ const RecentActivityRow: React.FC<IProps> = ({ item }) => (
   <div className="activity-row flex flex-center flex-space-between no-select">
     <ProcessType type={item.type} />
     <div className="center">
-      <p>{item.time}</p>
+      <p>{item.pair || item.time}</p>
     </div>
     <div className="center">
       <strong>

@@ -52,6 +52,7 @@ const BankProcess: React.FC = () => {
   const [lottieType, setLottieType] = useState<"success" | "failed" | null>(
     null
   );
+  const depositStatus = depositResult?.status ?? null;
   const NETWORKS: { key: string; label: string }[] = [
     { key: "BTC", label: "BTC" },
     { key: "TRC20", label: "TRC20 (TRON)" },
@@ -266,21 +267,21 @@ const BankProcess: React.FC = () => {
 
   // show a centered Lottie modal on success/failure after the deposit status changes
   useEffect(() => {
-    if (!depositResult || !depositResult.status) return;
-    if (depositResult.status === "CONFIRMED") {
+    if (!depositStatus) return;
+    if (depositStatus === "CONFIRMED") {
       setLottieType("success");
       setLottieModalOpen(true);
       const t = setTimeout(() => setLottieModalOpen(false), 3500);
       return () => clearTimeout(t);
     }
-    if (depositResult.status === "FAILED" || depositResult.status === "ERROR") {
+    if (depositStatus === "FAILED" || depositStatus === "ERROR") {
       setLottieType("failed");
       setLottieModalOpen(true);
       const t = setTimeout(() => setLottieModalOpen(false), 3500);
       return () => clearTimeout(t);
     }
     return undefined;
-  }, [depositResult?.status]);
+  }, [depositStatus]);
 
   // derive QR payload: prefer BTCPay paymentUrl/checkout; otherwise construct a simple on-chain URI
   const qrValue = (() => {

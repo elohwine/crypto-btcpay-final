@@ -5,6 +5,7 @@ import { TronService } from '../tron/tron.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { randomUUID } from 'crypto';
+import { CreateDepositDto, DirectDepositDto } from './dto/deposits.dto';
 
 @Controller('api/deposits')
 export class DepositsController {
@@ -17,7 +18,7 @@ export class DepositsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async create(@Body() body: any, @Req() req: any){
+  async create(@Body() body: CreateDepositDto, @Req() req: any){
     const { currency, amount, userId, walletAddress } = body;
         // Prefer authenticated user id (req.user.sub) if available, fall back to provided userId or seed-user for dev
     const authUserId = req?.user?.sub;
@@ -197,7 +198,7 @@ export class DepositsController {
   }
 
   @Post('direct')
-  async direct(@Body() body: any, @Req() req: any){
+  async direct(@Body() body: DirectDepositDto, @Req() req: any){
     const { txHash, contract, toAddress, amount, userId } = body;
     const authUserId = req?.user?.sub;
     const user = userId || authUserId || 'seed-user';

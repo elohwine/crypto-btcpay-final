@@ -18,6 +18,7 @@ const Navigation: React.FC = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
     <Route path="/market" element={<MarketScreen />} />
+    <Route path="/trade/:symbol" element={<MarketScreen />} />
     <Route path="/landing" element={<LandingPage />} />
     <Route path="/members/signin" element={<SigninScreen />} />
     <Route
@@ -30,11 +31,7 @@ const Navigation: React.FC = () => (
     />
     <Route
       path="/capital"
-      element={
-        <ProtectedRoute>
-          <CapitalScreen />
-        </ProtectedRoute>
-      }
+       element={<CapitalScreen />}
     />
     <Route
       path="/dashboard"
